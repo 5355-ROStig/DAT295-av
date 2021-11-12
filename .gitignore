@@ -1,2 +1,7 @@
-# pycharm stuff
+# Pycharm stuff
 .idea/*
+
+# Build stuff
+build/*
+devel/*
+.catkin_workspace
