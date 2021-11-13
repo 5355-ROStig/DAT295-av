@@ -21,3 +21,7 @@ The node takes the following parameters:
 Example start:
     
     rosrun gv_client gv_socket_server.py _host:="0.0.0.0" _port:=2121 _tag_id:=4
+
+Data is published on the `/gv_positions` topic with the GulliViewPosition message type, defined like so:
+
+https://github.com/5535-ROStig/DAT295-av/blob/d238f886bc93f7a53b91cd7dafae62b24f86df0e/src/gv_client/msg/GulliViewPosition.msg
