@@ -1,7 +1,10 @@
 # Pycharm stuff
-.idea/*
+**/.idea/*
 
 # Build stuff
 build/*
 devel/*
 .catkin_workspace
+
+# Python virtual environment
+venv/
