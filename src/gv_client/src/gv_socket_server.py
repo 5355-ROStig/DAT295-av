@@ -88,10 +88,10 @@ if __name__ == "__main__":
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.start()
 
-    # Spin main thread (the ROS node) until shutdown
-    rospy.spin()
+        # Spin main thread (the ROS node) until shutdown
+        rospy.spin()
 
-    # Shut down server when node shuts down
-    rospy.loginfo("Node received shutdown signal, shutting down server")
-    server.shutdown()
-    rospy.loginfo("Server shutdown, exiting")
+        # Shut down server when node shuts down
+        rospy.loginfo("Node received shutdown signal, shutting down server")
+        server.shutdown()
+        rospy.loginfo("Server shutdown, exiting")
