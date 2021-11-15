@@ -30,16 +30,20 @@ class GulliViewPacketHandler(BaseRequestHandler):
     def handle(self):
         # Receiving binary detection dafta from GulliView
         recv_buf = bytearray(self.request[0])
-        rospy.loginfo(f"Received {len(recv_buf)} bytes from {self.client_address}")
+        rospy.logdebug(f"Received {len(recv_buf)} bytes from {self.client_address}")
 
         # Fetch the type of message from the buffer data
         msg_type = unpack_data(recv_buf, start=0)
         sub_type = unpack_data(recv_buf, start=4)
 
+        rospy.logdebug(f"Message type: {msg_type}, subtype: {sub_type}")
+
         if msg_type == 1 and sub_type == 2:
 
             # The number of tags in this message
             length = unpack_data(recv_buf, start=28)
+
+            rospy.logdebug(f"Detections in packet: {length}")
 
             # Tag data from the GulliView server is placed in the buffer data
             # from the 32nd bit. A new tag is placed then placed every 16th bit
@@ -49,9 +53,12 @@ class GulliViewPacketHandler(BaseRequestHandler):
                 # Tag id, add 3 to offset subtraction done in GulliView (tags 0-3 are used for calibration)
                 tag_id = unpack_data(recv_buf, start=base) + 3
 
+                rospy.logdebug(f"Detected tag id: {tag_id}")
+
                 # If we aren't listening for all tags, and this is not the tag
                 # we are listening for, skip it.
                 if self.listen_tag_id != "all" and tag_id != self.listen_tag_id:
+                    rospy.logdebug("not interested, continuing...")
                     continue
 
                 # X position of tag
@@ -81,7 +88,7 @@ if __name__ == "__main__":
 
     # Set static variables on packet handler class to pass information to its instances
     GulliViewPacketHandler.publisher = rospy.Publisher(topic, GulliViewPosition, queue_size=10)
-    GulliViewPacketHandler.tag_id = listen_tag_id
+    GulliViewPacketHandler.listen_tag_id = listen_tag_id
 
     rospy.loginfo(f"Starting UDP server on {host}:{port}, listening for tag ID: {listen_tag_id}")
     with UDPServer((host, port), GulliViewPacketHandler) as server:
