@@ -5,6 +5,7 @@
 build/*
 devel/*
 .catkin_workspace
+/install
 
 # Python virtual environment
 venv/
