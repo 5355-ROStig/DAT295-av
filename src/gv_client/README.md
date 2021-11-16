@@ -5,12 +5,11 @@ A ROS node acting as a client for GulliView position data.
 
 Start GulliView on the roof system using the following command:
 
-    startCamerasNew.sh $IP $PORT
+    cd ~/repository/GulliView/build && ./startCamerasBroadcast.sh $PORT
     
-where IP and PORT point at the IP-address of the machine where this ROS node
-runs.
+where PORT points at the port where you want gv_client nodes to listen. 
 
-The node takes the following parameters:
+## The node takes the following parameters:
 
 | Parameter | Default | Description |
 | --------- | ------- | ----------- |
