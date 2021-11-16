@@ -1,0 +1,32 @@
+#!/usr/bin/python3
+
+from socket import *
+import time
+import rospy
+import sys
+from geometry_msgs.msg import Twist
+
+
+rospy.init_node("movementforward")
+publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+twist = Twist()
+#speed = float(sys.argv[1]) #0.1 recommend)
+#print("INITIAL SPEED FROM ARG: ",  speed)
+
+def move_f():
+ print("Speed in the move_f 0.1")
+ twist.linear.x = 0.1
+ twist.linear.y = 0
+ twist.linear.z = 0
+ twist.angular.x= 0
+ twist.angular.y= 0
+ twist.angular.z= 0
+ publisher.publish(twist)
+ time.sleep(2)
+ #twist.linear.x = 0
+# publisher.publish(twist)
+	
+move_f()	
+
+
+

@@ -22,4 +22,5 @@ while True:
         twist.angular.y= 0
         twist.angular.z= 0
         publisher.publish(twist)
-
+        break
+rospy.spin()
