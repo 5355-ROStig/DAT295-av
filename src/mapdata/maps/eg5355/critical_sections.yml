@@ -1,0 +1,74 @@
+sections:
+  # The Roundabout
+  - type: 3way_roundabout
+    position: {x: 2360, y: 2880}  # Bottom-left corner of intersection
+    width: 2280
+    height: 2210
+    orientation: W  # N,E,S,W, the direction of the "middle" road
+    connection_zones:
+      - origin: {x: 670, y: -810}
+        width: 440
+        height: 820
+      - origin: {x: -780, y: 1120}
+        width: 800
+        height: 410
+      - origin: {x: 1120, y: 2200}
+        width: 420
+        height: 820
+
+
+  # Top-left 3-way
+  # By the whiteboard-wall, furthest from the door
+  - type: 3way
+    position: {x: 580, y: 3590}  # Bottom-left corner of intersection
+    width: 800
+    height: 810
+    orientation: E  # N,E,S,W, the direction of the "middle" road
+    connection_zones:
+      - origin: {x: 390, y: 810}  # Positions are relative to the intersection origin
+        width: 410
+        height: 820
+      - origin: {x: 800, y: 10}
+        width: 820
+        height: 410
+      - origin: {x: 0, y: -820}
+        width: 390
+        height: 820
+
+
+  # Bottom-left 3-way
+  # By the whiteboard-wall, closest to the door
+  - type: 3way
+    position: {x: 550, y: 6100}  # Bottom-left corner of intersection
+    width: 800
+    height: 810
+    orientation: E  # N,E,S,W, the direction of the "middle" road
+    connection_zones:
+      - origin: {x: -10, y: -820}  # Positions are relative to the intersection origin
+        width: 430
+        height: 820
+      - origin: {x: 400, y: 810}
+        width: 410
+        height: 820
+      - origin: {x: 790, y: 0}
+        width: 820
+        height: 400
+
+
+  # Bottom-right 3-way
+  # By the window-wall
+  - type: 3way
+    position: {x: 3070, y: 6120}  # Bottom-left corner of intersection
+    width: 800
+    height: 810
+    orientation: W  # N,E,S,W, the direction of the "middle" road
+    connection_zones:
+      - origin: {x: 0, y: -820}  # Positions are relative to the intersection origin
+        width: 420
+        height: 820
+      - origin: {x: -830, y: 380}
+        width: 820
+        height: 400
+      - origin: {x: 380, y: 770}
+        width: 390
+        height: 820

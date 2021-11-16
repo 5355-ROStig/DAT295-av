@@ -1,0 +1,3 @@
+string intersection
+string initial_direction
+Intersection_Action action

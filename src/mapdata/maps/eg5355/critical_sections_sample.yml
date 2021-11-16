@@ -1,0 +1,72 @@
+sections:
+  # This would represent the following intersection, where O is the origin.
+  # ____________
+  # _ _     _ _
+  # ___O   ,____
+  #    | | |
+  #    |   |
+  - type: 3way
+    position: {x: 0, y: 0}  # Bottom-left corner of intersection
+    width: 10
+    height: 10
+    orientation: S  # N,E,S,W, the direction of the "middle" road
+    connection_zones:
+      - origin: {x: -10, y: 0}  # Positions are relative to the intersection origin
+        width: 1000
+        height: 500
+      - origin: {x: 5, y: -10}
+        width: 5
+        height: 10
+      - origin: {x: 10, y: 5}
+        width: 10
+        height: 5
+
+  # This would represent the following intersection, where O is the origin.
+  #    |   |
+  # ___| | L____
+  # _ _     _ _
+  # ___O   ,____
+  #    | | |
+  #    |   |
+  - type: 4way
+    position: {x: 100, y: 200}  # Bottom-left corner of intersection
+    width: 10
+    height: 10
+    orientation: N  # Orientation is irrelevant but kept for consistency.
+    connection_zones:
+      - origin: {x: -10, y: 0}
+        width: 10
+        height: 5
+      - origin: {x: 5, y: -10}
+        width: 5
+        height: 10
+      - origin: {x: 10, y: 5}
+        width: 10
+        height: 5
+      - origin: {x: 0, y: 10}
+        width: 5
+        height: 10
+
+  # This would represent the following roundabout, where O is the origin.
+  # ____-""-_____
+  # _ _  .  _ _ _
+  # ___O   ,_____
+  #    | | |
+  #    |   |
+  - type: 3way_roundabout
+    position: {x: -500, y: 1234}  # Bottom-left corner of intersection
+    width: 10
+    height: 10
+    orientation: S  # N,E,S,W, the direction of the "middle" road
+    connection_zones:
+      - origin: {x: -10, y: 0}
+        width: 10
+        height: 5
+      - origin: {x: 5, y: -10}
+        width: 5
+        height: 10
+      - origin: {x: 10, y: 5}
+        width: 10
+        height: 5
+
+

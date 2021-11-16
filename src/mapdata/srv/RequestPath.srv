@@ -1,0 +1,4 @@
+TruckState state
+Position dest
+---
+Path path

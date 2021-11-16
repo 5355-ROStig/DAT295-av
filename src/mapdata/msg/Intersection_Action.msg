@@ -1,0 +1,4 @@
+string Intersection_1
+string Intersection_2
+string Intersection_3
+string Roundabout
