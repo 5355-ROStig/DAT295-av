@@ -38,6 +38,7 @@ from map_data_reader import load_map
 
 from environment import Map
 from nav_msgs.srv import GetMap
+from nav_msgs.msg import OccupancyGrid
 from mapdata.srv import GetCDM, GetGraph
 
 
@@ -50,23 +51,10 @@ class MapData:
         self.map_data: Map = load_map(map_name)
         rospy.loginfo(f"Loaded map '{map_name}'")
 
-        rospy.loginfo("Starting map occupancy grid service")
-        map_service = rospy.Service('map_occupancy_grid', GetMap, self.map_occupancy_grid_handler)
-
-        rospy.loginfo("Starting map graph service")
-        graph_service = rospy.Service('map_graph', GetGraph, self.map_graph_handler)
-
-        rospy.loginfo("Starting CDM data service")
-        graph_service = rospy.Service('cdm_data', GetCDM, self.cdm_data_handler)
-
-    def map_occupancy_grid_handler(self, data):
-        return self.map_data.get_occupancy_grid()
-
-    def map_graph_handler(self, data):
-        return self.map_data.get_graph()
-
-    def cdm_data_handler(self, data):
-        return self.map_data.get_cdm_data()
+        rospy.loginfo("Publishing map occupancy grid data to /rviz_map.")
+        self.map_pub = rospy.Publisher('rviz_map', OccupancyGrid,
+                                       queue_size = 1, latch = True)
+        self.map_pub.publish(self.map_data.get_occupancy_grid())
 
 
 if __name__ == '__main__':
