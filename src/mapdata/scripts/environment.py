@@ -43,19 +43,15 @@ from cdm_section import CDMSection
 
 
 class Map:
-    def __init__(self, name: str, image: Path, image_scale: int, graph: Path, cdm_data_file: Path):
+    def __init__(self, name: str, image: Path, image_scale: int ):
         self.name = name
         self._image_file = image.resolve()
         self.image = self._load_image(image)
         self.scale = image_scale
-        self.graph = graph.resolve()
-
-        self.cdm_sections = self._load_cdm_data(cdm_data_file)
-
         self._occupancy_grid = None
 
     def __str__(self):
-        return f"Map '{self.name}', scale: {self.scale}, image: '{self._image_file}', graph: '{self.graph}'"
+        return f"Map '{self.name}', scale: {self.scale}, image: '{self._image_file}'"
 
     @property
     def width(self):
@@ -124,39 +120,3 @@ class Map:
 
         rospy.loginfo("[Occupancy Grid] Sending grid")
         return oc
-
-    def get_graph(self):
-        """
-        Reads the GraphML graph of the road network and returns it.
-
-        Minimizes by removing all whitespace.
-        """
-        with self.graph.open() as file:
-            graphml_data = file.readlines()
-
-        minimized = [line.strip() for line in graphml_data]
-        result = "".join(minimized)
-        rospy.loginfo(f"[Graph] Sending {len(result)} chars")
-        return result
-
-    @staticmethod
-    def _load_cdm_data(cdm_data_file):
-        """
-        Read the CDM data about positions and types of critical sections.
-        """
-        if not cdm_data_file.is_file():
-            raise FileNotFoundError(f"Could not find CDM data file for map at: '{cdm_data_file.parent.resolve()}'")
-
-        with cdm_data_file.open() as file:
-            cdm_data = yaml.safe_load(file)
-
-        cdm_sections = [CDMSection(section) for section in cdm_data['sections']]
-
-        return cdm_sections
-
-    def get_cdm_data(self):
-        """
-        Returns all information about the CDM-enabled sections of the system.
-        """
-
-        return {'sections': [cdm_section.to_ros_message() for cdm_section in self.cdm_sections]}

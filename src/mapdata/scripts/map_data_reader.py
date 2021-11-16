@@ -55,8 +55,7 @@ def load_map(map_name: str) -> Map:
     config_file = map_data_dir / 'config.yml'
     config = read_config(config_file)
 
-    return Map(map_name, map_data_dir / config['image-file'], config['image-scale'],
-               map_data_dir / config['graph-file'], map_data_dir / config['cdm-data'])
+    return Map(map_name, map_data_dir / config['image-file'], config['image-scale'])
 
 
 def read_config(config_file: Path) -> Dict:
