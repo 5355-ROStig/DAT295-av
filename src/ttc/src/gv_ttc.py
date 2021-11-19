@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 import array
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 import collections
 
 from gv_client.msg import GulliViewPosition
@@ -12,6 +12,7 @@ from gv_client.msg import GulliViewPosition
 # Constants
 NUM_SAMPLES = 2
 ROBOT_RADIUS = 0.25
+TIMEOUT_SEC = 3
 
 # Variables
 robots = {}
@@ -22,9 +23,11 @@ class Robot:
         self.buf = collections.deque(maxlen=NUM_SAMPLES) # historic positions
         self.v = np.array([0, 0]) # current velocity
         self.p = np.array([1, 1]) # current position
+        self.lastReceive = datetime.now()
 
     def receivePosition(self, p):
-        self.buf.append((datetime.now(), p))
+        self.lastReceive = datetime.now()
+        self.buf.append((self.lastReceive, p))
         self.p = p
         self.updateVel()
         #print("New v for", self.name, "is", self.v)
@@ -85,6 +88,14 @@ def ttc(r1, r2):
 
 def callback(pos):
     global robots
+
+    # Remove old robot positions
+    delete = [k for k, v in robots.items() if v.lastReceive + timedelta(seconds=TIMEOUT_SEC) < datetime.now()]
+    for k in delete:
+        print("Robot", k, "is gone")
+        del robots[k]
+
+    # New position
     p = np.array([pos.x/1000, pos.y/1000])
     robot = robots.get(pos.tagId)
 
