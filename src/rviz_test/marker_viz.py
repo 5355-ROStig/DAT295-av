@@ -1,52 +1,75 @@
 #!/usr/bin/python3
 
 import rospy
+import tf2_ros
+from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
-from nav_msgs.msg import OccupancyGrid
-from nav_msgs.srv import GetMap
+from gv_client.msg import GulliViewPosition
 
-def main():
-    rospy.init_node('visualizer')
+class GulliViewMarker():
+    def __init__(self):
+        rospy.init_node('visualizer')
 
-    m = init_marker()
+        self.marker = self.init_marker()
+        self.marker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
 
-    marker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10, latch=True)
-    marker_pub.publish(m)
-    rospy.spin()
+        rospy.Subscriber("/gv_positions", GulliViewPosition, self.marker_state_handler)
 
 
-def init_marker():
-    m = Marker()
+    def marker_state_handler(self, gv_position):
+        t = TransformStamped()
+        t.header.stamp = rospy.Time.now()
 
-    m.header.frame_id = "map"
-    m.header.stamp = rospy.Time(0)
+        t.header.frame_id = "map"
+        t.child_frame_id = self.marker.header.frame_id
+        t.transform.translation.x = gv_position.x
+        t.transform.translation.y = gv_position.y
+        t.transform.translation.z = 0
 
-    m.ns = "Test marker"
-    m.id = 0
-    m.type = Marker.CUBE
-    m.action = Marker.ADD
+        # Must be set even though we don't care about rotation
+        t.transform.rotation.x = 0
+        t.transform.rotation.y = 0
+        t.transform.rotation.z = 0
+        t.transform.rotation.w = 1
 
-    # Position is always at origin of the frame
-    m.pose.position.x = 0
-    m.pose.position.y = 0
-    m.pose.position.z = 0  # We're only working in 2D
-    # Orientation is always identity
-    m.pose.orientation.x = 0
-    m.pose.orientation.y = 0
-    m.pose.orientation.z = 0
-    m.pose.orientation.w = 1
-    m.scale.x = 1
-    m.scale.y = 0.1
-    m.scale.z = 0.1
-    m.color.a = 1.0
-    m.color.r = 0.0
-    m.color.g = 1.0
-    m.color.b = 0.0
+        rospy.Publisher('visualization_marker', Marker, queue_size=10)
+        self.marker_pub.publish(self.marker)
+        tf2_ros.TransformBroadcaster().sendTransform(t)
 
-    # Persist
-    m.lifetime = rospy.Duration(0)
-    return m
+
+    def init_marker(self):
+        m = Marker()
+
+        m.header.frame_id = "marker_frame"
+        m.header.stamp = rospy.Time(0)
+
+        m.ns = "Test marker"
+        m.id = 0
+        m.type = Marker.CUBE
+        m.action = Marker.ADD
+
+        # Position is always at origin of the frame
+        m.pose.position.x = 0
+        m.pose.position.y = 0
+        m.pose.position.z = 20  # We're only working in 2D
+        # Orientation is always identity
+        m.pose.orientation.x = 0
+        m.pose.orientation.y = 0
+        m.pose.orientation.z = 0
+        m.pose.orientation.w = 1
+        m.scale.x = 100
+        m.scale.y = 100
+        m.scale.z = 100
+        m.color.a = 1.0
+        m.color.r = 1.0
+        m.color.g = 0.0
+        m.color.b = 0.0
+
+        # Persist
+        m.lifetime = rospy.Duration(0)
+        return m
 
 
 if __name__ == "__main__":
-    main()
+    GulliViewMarker()
+    rospy.spin()
