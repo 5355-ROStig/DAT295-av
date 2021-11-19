@@ -6,22 +6,37 @@ from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
 from gv_client.msg import GulliViewPosition
 
-class GulliViewMarker():
+class Visualizer():
     def __init__(self):
         rospy.init_node('visualizer')
 
-        self.marker = self.init_marker()
+        # Create markers for each wifibot
+        self.bot_markers = {
+            # 4: self.init_marker(4),
+            5: self.init_marker(5),
+            6: self.init_marker(6)
+        }
+
+        rospy.loginfo(f"Visualizer started, looking for tags: {list(self.bot_markers.keys())}")
+
         self.marker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
 
-        rospy.Subscriber("/gv_positions", GulliViewPosition, self.marker_state_handler)
+        rospy.Subscriber("/gv_positions", GulliViewPosition, self.bot_state_handler)
 
 
-    def marker_state_handler(self, gv_position):
+    def bot_state_handler(self, gv_position):
+        tag_id = gv_position.tagId
+
+        if tag_id not in self.bot_markers:
+            rospy.logerr(f"Detected unknown tagId: {tag_id}")
+            return
+
         t = TransformStamped()
         t.header.stamp = rospy.Time.now()
-
+        # This frame name comes from mapdata package I think
         t.header.frame_id = "map"
-        t.child_frame_id = self.marker.header.frame_id
+        t.child_frame_id = self.bot_markers[tag_id].header.frame_id
+
         t.transform.translation.x = gv_position.x
         t.transform.translation.y = gv_position.y
         t.transform.translation.z = 0
@@ -33,43 +48,50 @@ class GulliViewMarker():
         t.transform.rotation.w = 1
 
         rospy.Publisher('visualization_marker', Marker, queue_size=10)
-        self.marker_pub.publish(self.marker)
+        self.marker_pub.publish(self.bot_markers[tag_id])
         tf2_ros.TransformBroadcaster().sendTransform(t)
 
 
-    def init_marker(self):
+    def init_marker(self, bot_id):
         m = Marker()
 
-        m.header.frame_id = "marker_frame"
-        m.header.stamp = rospy.Time(0)
+        # ns+id and frame_id needs to be unique
+        m.header.frame_id = "bot_frame" + str(bot_id)
+        m.ns = "bot"
+        m.id = bot_id
 
-        m.ns = "Test marker"
-        m.id = 0
+        m.header.stamp = rospy.Time(0)
         m.type = Marker.CUBE
         m.action = Marker.ADD
 
-        # Position is always at origin of the frame
+        # Position is always at origin of the bot's frame
         m.pose.position.x = 0
         m.pose.position.y = 0
-        m.pose.position.z = 20  # We're only working in 2D
+        m.pose.position.z = 100  # Place above map
+
         # Orientation is always identity
         m.pose.orientation.x = 0
         m.pose.orientation.y = 0
         m.pose.orientation.z = 0
         m.pose.orientation.w = 1
-        m.scale.x = 100
-        m.scale.y = 100
-        m.scale.z = 100
-        m.color.a = 1.0
+
+        # Size of marker
+        m.scale.x = 200
+        m.scale.y = 200
+        m.scale.z = 200
+
+        # RGBA colors
         m.color.r = 1.0
         m.color.g = 0.0
         m.color.b = 0.0
+        m.color.a = 1.0
 
-        # Persist
+        # Persistent marker
         m.lifetime = rospy.Duration(0)
+
         return m
 
 
 if __name__ == "__main__":
-    GulliViewMarker()
+    Visualizer()
     rospy.spin()
