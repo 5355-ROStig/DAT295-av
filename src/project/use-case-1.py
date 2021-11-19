@@ -7,13 +7,12 @@ from geometry_msgs.msg import Twist
 
 
 
-rospy.init_node("useCase1")
+rospy.init_node("useCase1WhiteRobot")
 publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
 twist = Twist()
 
 #we start movement
 def move(speed):
- print("Stop message received")
  twist.linear.x = float(speed)
  twist.linear.y = 0
  twist.linear.z = 0
@@ -63,8 +62,25 @@ def back_car():
         break
  rospy.spin()
 
+def listen_for_start():
+ s = socket(AF_INET, SOCK_DGRAM)
+ s.bind(('', 5005))
+ time.sleep(1)
+ while True:
+    m = s.recvfrom(5005)
+    m = m[0].decode("utf-8")
+    if m == "START":
+        print("Starting the process...")
+        break
+ print ("inside listener")
+
+
 #take argument and define the behaviour depending on the type of the car
 if sys.argv[1] == "front":
+ listen_for_start()
+ print ("Front car is activated")
  front_car()
 if sys.argv[1] == "back":
+ listen_for_start()
+ print ("Back car is activated")
  back_car()
