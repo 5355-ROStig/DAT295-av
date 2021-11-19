@@ -1,4 +1,4 @@
-image-file: map_centerline.png
+image-file: map_centerline-flipped.png
 image-scale: 10
 graph-file: eg5355.xml
 cdm-data: critical_sections.yml
