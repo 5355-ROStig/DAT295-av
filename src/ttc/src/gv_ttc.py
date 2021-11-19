@@ -76,7 +76,7 @@ def ttc(r1, r2):
         return 0
 
     underSqrt = pow(2 * np.dot(o, d), 2) - 4 * np.dot(d, d) * (np.dot(o, o) - pow(2 * ROBOT_RADIUS, 2))
-    if underSqrt >= 0:
+    if underSqrt >= 0 and np.dot(d, d) > 0:
         t1 = (-2*np.dot(o, d) + math.sqrt(underSqrt)) / (2 * np.dot(d, d))
         #print("t1=", t1)
         t2 = (-2*np.dot(o, d) - math.sqrt(underSqrt)) / (2 * np.dot(d, d))
