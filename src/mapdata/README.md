@@ -1,8 +1,13 @@
-Map Data Node 2020
+Map Data Node
 ==================
 
-Hosts ROS services for providing other nodes with information about the map.
-This allows swapping out the map/road system that is used in the system.
+Modified code from the 2020 bachelor thesis
+https://odr.chalmers.se/handle/20.500.12380/301963
 
-Depends on master2020 branch of custom_msgs repo for messages and service 
-descriptions.
+Publishes an OccupancyGrid to the `/rviz_map` topic. This can be displayed in RViz or used by the navigation stack.
+
+Example start:
+
+    rosrun mapdata map_data_node.py _map_name:="eg5355"
+
+Where eg5355 is the name of a folder in `./maps` that contains a config.yml file and a png of the map.
