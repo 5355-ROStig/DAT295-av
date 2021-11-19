@@ -10,7 +10,7 @@ import collections
 from gv_client.msg import GulliViewPosition
 
 # Constants
-NUM_SAMPLES = 4
+NUM_SAMPLES = 2
 ROBOT_RADIUS = 0.25
 
 # Variables
@@ -58,7 +58,10 @@ class Robot:
             if 0 <= res < t:
                 t = res
 
-        print("Collision in ", t, " seconds")
+        if t > 0:
+            print("Collision in ", t, " seconds")
+        else:
+            print("Collision detected!")
 
 
 def ttc(r1, r2):
@@ -66,7 +69,8 @@ def ttc(r1, r2):
     o = r2.p - r1.p
     d = r2.v - r1.v
 
-    #print("hmm", np.dot(o, d))
+    if np.dot(o, o) <= pow(2 * ROBOT_RADIUS, 2):
+        return 0
 
     underSqrt = pow(2 * np.dot(o, d), 2) - 4 * np.dot(d, d) * (np.dot(o, o) - pow(2 * ROBOT_RADIUS, 2))
     if underSqrt >= 0:
