@@ -10,7 +10,7 @@ import collections
 from gv_client.msg import GulliViewPosition
 
 # Constants
-NUM_SAMPLES = 2
+NUM_SAMPLES = 3
 ROBOT_RADIUS = 0.25
 TIMEOUT_SEC = 3
 
@@ -21,8 +21,8 @@ class Robot:
     def __init__(self, name):
         self.name = name
         self.buf = collections.deque(maxlen=NUM_SAMPLES) # historic positions
-        self.v = np.array() # current velocity
-        self.p = np.array() # current position
+        self.v = np.array([]) # current velocity
+        self.p = np.array([]) # current position
         self.lastReceive = datetime.now()
 
     def receivePosition(self, p):
