@@ -1,0 +1,13 @@
+<launch>
+<node name="rviz" pkg="rviz" type="rviz" />
+
+<!-- Start a gulliview_client with default parameters (port=2121, tags=all) -->
+<node name="gulliview_client" pkg="gv_client" type="gv_socket_server.py" args="_tag_id:=all" />
+
+<!-- We want to visualize the OccupancyGrid -->
+<node name="mapdata_server" pkg="mapdata" type="map_data_node.py" args="_map_name:='eg5355'" />
+
+<!--
+<node name="visualization" pkg="visualization" type="marker_viz.py" />
+-->
+</launch>
