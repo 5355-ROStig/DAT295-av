@@ -5,6 +5,7 @@ import tf2_ros
 from geometry_msgs.msg import TransformStamped
 from visualization_msgs.msg import Marker
 from gv_client.msg import GulliViewPosition
+from zone_marker import ZoneMarker
 
 class Visualizer():
     def __init__(self):
@@ -17,12 +18,19 @@ class Visualizer():
             6: self.init_marker(6)
         }
 
+
         rospy.loginfo(f"Visualizer started, looking for tags: {list(self.bot_markers.keys())}")
 
         self.marker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
 
         rospy.Subscriber("/gv_positions", GulliViewPosition, self.bot_state_handler)
 
+        zone_pub = rospy.Publisher('zone_marker', Marker, queue_size=1, latch=True)
+        # Show critical section in a nice pink color
+        section_marker = ZoneMarker(zone_id = 0, zone_type = 'critical_section',
+                                    origin = (1795, 6106), width = 800,
+                                    height = 800, color = (255, 85, 127), y_mirroring = 0)
+        zone_pub.publish(section_marker.marker)
 
     def bot_state_handler(self, gv_position):
         tag_id = gv_position.tagId
@@ -47,9 +55,9 @@ class Visualizer():
         t.transform.rotation.z = 0
         t.transform.rotation.w = 1
 
-        rospy.Publisher('visualization_marker', Marker, queue_size=10)
         self.marker_pub.publish(self.bot_markers[tag_id])
         tf2_ros.TransformBroadcaster().sendTransform(t)
+
 
 
     def init_marker(self, bot_id):
