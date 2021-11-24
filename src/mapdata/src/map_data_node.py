@@ -98,6 +98,7 @@ class MapData:
         # Warning: copy-pasta programming :o
         # North road section
         rs_north = RoadSection()
+        rs_north.name = "N"
         rs_north.left = P1
         rs_north.right = P2
         rs_north.length = road_length
@@ -105,6 +106,7 @@ class MapData:
         
         # South road section
         rs_south = RoadSection()
+        rs_south.name = "S"
         rs_south.left = P3
         rs_south.right = P0
         rs_south.length = road_length
@@ -112,6 +114,7 @@ class MapData:
 
         # West road section
         rs_west = RoadSection()
+        rs_west.name = "W"
         rs_west.left = P2
         rs_west.right = P3
         rs_west.length = road_length
@@ -119,6 +122,7 @@ class MapData:
 
         # East road section
         rs_east = RoadSection()
+        rs_east.name = "E"
         rs_east.left = P0
         rs_east.right = P1
         rs_east.length = road_length
