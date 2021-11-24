@@ -67,7 +67,6 @@ add_message_files(
     # CarInFront.msg
     # inFront.msg
     RoadSection.msg
-    StopLine.msg
 )
 
 ## Generate services in the 'srv' folder
