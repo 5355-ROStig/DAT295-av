@@ -1,18 +1,27 @@
 <launch>
 <arg name="robot" />
 <arg name="tag_id" />
+<arg name="scenario" />
+
+<env name="ROSCONSOLE_FORMAT" value="[${severity}] [${time}] [${node}]: ${message}" />
+
 <group ns="$(arg robot)" >
-<node pkg="roswifibot" type="wifibot_node" name="wifibot_node" required="true"
+  <node pkg="roswifibot" type="wifibot_node" name="wifibot_node" required="true"
         args="_port:=/dev/ttyUSB0
               _base_frame:=$(arg robot)_base_frame
               _odom_frame:=$(arg robot)_odom
               _entrax:=.39
               _relay1:=true
               _relay2:=true
-              _relay3:=true"/>
+              _relay3:=true"
+        output="screen" />
   <node name="gulliview_client" pkg="gv_client" type="gv_socket_server.py"
-        args="_tag_id:=$(arg tag_id)" />
+        args="_tag_id:=$(arg tag_id)" output="screen" />
   <node name="mapdata_server" pkg="mapdata" type="map_data_node.py"
-        args="_map_name:='4way'" />
+        args="_map_name:='eg5355'
+              _scenario:=$(arg scenario)"
+        output="screen" />
+  <node name="mission_planner" pkg="mission_planner" type="mission_planner_node.py"
+        args="_scenario:=$(arg scenario)" output="screen" />
 </group>
 </launch>
