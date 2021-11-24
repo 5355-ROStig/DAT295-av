@@ -131,7 +131,7 @@ class MapData:
         TRAFFIC_LIGHT = rs_north.TRAFFIC_LIGHT
 
         # Print error message just in case someone made a typo
-        if scenario not in ["scenario1", "scenario2", "scenario3"]
+        if scenario not in ["scenario1", "scenario2", "scenario3"]:
             rospy.logerr(f"Scenario name {scenario} not found.")
 
         if scenario == "scenario1":
