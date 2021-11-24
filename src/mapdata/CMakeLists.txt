@@ -50,32 +50,30 @@ find_package(catkin REQUIRED
 add_message_files(
     FILES
     # GulliViewPositions.msg
-    Path.msg
+    # Path.msg
     Position.msg
-    TruckState.msg
-    Intersection_Action.msg
-    StampedPath.msg
-    StampedPosition.msg
+    # TruckState.msg
+    # Intersection_Action.msg
+    # StampedPath.msg
+    # StampedPosition.msg
     # V2I.msg
-    SchedulePhase.msg
-    ScheduleState.msg
-    VTLPath.msg
-    VTLPosition.msg
+    # SchedulePhase.msg
+    # ScheduleState.msg
+    # VTLPath.msg
+    # VTLPosition.msg
     CDMConnectionZone.msg
     CDMSection.msg
     # CarState.msg
     # CarInFront.msg
     # inFront.msg
+    RoadSection.msg
+    StopLine.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-   RequestPath.srv
-   GenerateTrajectory.srv
-   GetCDM.srv
-   GetGraph.srv
-   GenerateTrajectory.srv
+   GetIntersection.srv
 )
 
 ## Generate actions in the 'action' folder
