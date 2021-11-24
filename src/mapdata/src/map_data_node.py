@@ -59,7 +59,7 @@ class MapData:
 
         # Scenario 
         scenario = rospy.get_param("~scenario")
-        self.intersection = self._four_way_intersection()
+        self.intersection = self._four_way_intersection(scenario)
 
         rospy.loginfo(f"Starting service for intersection data")
         rospy.Service("intersection_data", GetIntersection, self.intersection_data_handler)
