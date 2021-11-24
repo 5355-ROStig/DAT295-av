@@ -20,7 +20,7 @@ uint8 GIVE_WAY=1
 uint8 STOP_SIGN=2
 uint8 TRAFFIC_LIGHT=3
 
-unit8 priority_sign
+uint8 priority_sign
 
 # A bit redundant but nice for pretty printing
 string name
