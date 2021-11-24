@@ -38,7 +38,7 @@ from map_data_reader import load_map
 
 from environment import Map
 from nav_msgs.msg import OccupancyGrid
-from mapdata.srv import GetIntersection
+from mapdata.srv import GetIntersection, GetIntersectionResponse
 from mapdata.msg import Position, RoadSection
 
 
@@ -156,10 +156,10 @@ class MapData:
             rs_east.priority_sign = TRAFFIC_LIGHT
             rs_west.priority_sign = TRAFFIC_LIGHT
 
-        return GetIntersection(north=rs_north,
-                               west=rs_west,
-                               south=rs_south,
-                               east=rs_east)
+        return GetIntersectionResponse(north=rs_north,
+                                       west=rs_west,
+                                       south=rs_south,
+                                       east=rs_east)
 
 
     def intersection_data_handler(self, data):
