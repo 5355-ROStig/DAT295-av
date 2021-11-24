@@ -46,8 +46,7 @@ class MapData:
     def __init__(self):
         rospy.init_node('map_data')
 
-        map_name = rospy.:w
-        get_param("~map_name")
+        map_name = rospy.get_param("~map_name")
 
         self.map_data: Map = load_map(map_name)
         rospy.loginfo(f"Loaded map '{map_name}'")
@@ -58,12 +57,15 @@ class MapData:
                                        queue_size = 1, latch = True)
         self.map_pub.publish(self.map_data.get_occupancy_grid())
 
+        # Scenario 
+        scenario = rospy.get_param("~scenario")
         self.intersection = self._four_way_intersection()
+
         rospy.loginfo(f"Starting service for intersection data")
         rospy.Service("intersection_data", GetIntersection, self.intersection_data_handler)
 
     @staticmethod
-    def _four_way_intersection():
+    def _four_way_intersection(scenario):
         """
         Models the four way intersection to be used in experiments.
         """
@@ -122,6 +124,34 @@ class MapData:
         rs_east.length = road_length
         rs_east.stopline_offset = offset
 
+        # Get the constants
+        PRIORITY_ROAD = rs_north.PRIORITY_ROAD
+        GIVE_WAY = rs_north.GIVE_WAY
+        STOP_SIGN = rs_north.STOP_SIGN
+        TRAFFIC_LIGHT = rs_north.TRAFFIC_LIGHT
+
+        # Print error message just in case someone made a typo
+        if scenario not in ["scenario1", "scenario2", "scenario3"]
+            rospy.logerr(f"Scenario name {scenario} not found.")
+
+        if scenario == "scenario1":
+            # Huvudled N <-> S
+            rs_north.priority_sign = PRIORITY_ROAD
+            rs_south.priority_sign = PRIORITY_ROAD
+            # Väjningsplikt E <-> W
+            rs_east.priority_sign = GIVE_WAY
+            rs_west.priority_sign = GIVE_WAY
+        elif scenario == "scenario2":
+            rs_north.priority_sign = STOP_SIGN
+            rs_south.priority_sign = STOP_SIGN
+            rs_east.priority_sign = STOP_SIGN
+            rs_west.priority_sign = STOP_SIGN
+        elif scenario == "scenario3":
+            rs_north.priority_sign = TRAFFIC_LIGHT
+            rs_south.priority_sign = TRAFFIC_LIGHT
+            rs_east.priority_sign = TRAFFIC_LIGHT
+            rs_west.priority_sign = TRAFFIC_LIGHT
+
         return GetIntersection(north=rs_north,
                                west=rs_west,
                                south=rs_south,
@@ -132,8 +162,8 @@ class MapData:
       """
       Handles requests to the intersection data service.
       """
-      rospy.loginfo("Received request for intersection data.")
-      return self.map_data.get_cdm_data()
+      rospy.loginfo("Received request for intersection data. Handling...")
+      return self.intersection
 
 
 if __name__ == '__main__':
