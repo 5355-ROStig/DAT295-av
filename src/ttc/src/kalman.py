@@ -4,8 +4,8 @@ import numpy as np
 
 class KalmanFilterHelper:
     def __init__(self, initPos):
-        # x is state (x, y, v_x, v_y)
-        # z is measurement (x, y)
+        # x is state (p_x, p_y, v_x, v_y)
+        # z is measurement (p_x, p_y)
         self.filter = KalmanFilter(dim_x=4, dim_z=2)
 
         # Initial state
@@ -20,10 +20,10 @@ class KalmanFilterHelper:
         self.filter.P = np.eye(4) * 1000
 
         # Measurement noise
-        self.filter.R = np.eye(2) * 0.05
+        self.filter.R = np.eye(2) * 0.1
 
         # Process noise
-        self.filter.Q = Q_discrete_white_noise(dim=4, dt=0.05, var=0.13)
+        self.filter.Q = Q_discrete_white_noise(dim=4, dt=0.2, var=0.13)
 
 
     def newData(self, dt, pos):
