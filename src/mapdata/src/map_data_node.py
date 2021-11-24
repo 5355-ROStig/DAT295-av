@@ -37,24 +37,103 @@ import rospy
 from map_data_reader import load_map
 
 from environment import Map
-from nav_msgs.srv import GetMap
 from nav_msgs.msg import OccupancyGrid
-from mapdata.srv import GetCDM, GetGraph
+from mapdata.srv import GetIntersection
+from mapdata.msg import Position, RoadSection
 
 
 class MapData:
     def __init__(self):
         rospy.init_node('map_data')
 
-        map_name = rospy.get_param("~map_name")
+        map_name = rospy.:w
+        get_param("~map_name")
 
         self.map_data: Map = load_map(map_name)
         rospy.loginfo(f"Loaded map '{map_name}'")
 
-        rospy.loginfo("Publishing map occupancy grid data to /rviz_map.")
-        self.map_pub = rospy.Publisher('rviz_map', OccupancyGrid,
+        map_data_topic = "rviz_map"
+        rospy.loginfo(f"Publishing map occupancy grid data to /{map_data_topic}.")
+        self.map_pub = rospy.Publisher(map_data_topic, OccupancyGrid,
                                        queue_size = 1, latch = True)
         self.map_pub.publish(self.map_data.get_occupancy_grid())
+
+        self.intersection = self._four_way_intersection()
+        rospy.loginfo(f"Starting service for intersection data")
+        rospy.Service("intersection_data", GetIntersection, self.intersection_data_handler)
+
+    @staticmethod
+    def _four_way_intersection():
+        """
+        Models the four way intersection to be used in experiments.
+        """
+
+        # Below is EG5355
+        #
+        # y x ->
+        # |
+        # V
+        #
+        # We use this notation for orientation
+        #    +-------+
+        #    |       |
+        #    |   N   |  windows
+        #    | W + E |
+        # door   S   |
+        #    +--------
+
+        # Distances are given in mm
+        road_length = 1000
+        offset = 300
+
+        # Measurements from the room (blue tape corners) they don't make sense
+        # without the whiteboard image from Slack
+        P0 = Position(x=2584, y=6891)
+        P1 = Position(x=2591, y=6106)
+        P2 = Position(x=1785, y=6106)
+        P3 = Position(x=1795, y=6891)
+
+        # Warning: copy-pasta programming :o
+        # North road section
+        rs_north = RoadSection()
+        rs_north.left = P1
+        rs_north.right = P2
+        rs_north.length = road_length
+        rs_north.stopline_offset = offset
+        
+        # South road section
+        rs_south = RoadSection()
+        rs_south.left = P3
+        rs_south.right = P0
+        rs_south.length = road_length
+        rs_south.stopline_offset = offset
+
+        # West road section
+        rs_west = RoadSection()
+        rs_west.left = P2
+        rs_west.right = P3
+        rs_west.length = road_length
+        rs_west.stopline_offset = offset
+
+        # East road section
+        rs_east = RoadSection()
+        rs_east.left = P0
+        rs_east.right = P1
+        rs_east.length = road_length
+        rs_east.stopline_offset = offset
+
+        return GetIntersection(north=rs_north,
+                               west=rs_west,
+                               south=rs_south,
+                               east=rs_east)
+
+
+    def intersection_data_handler(self, data):
+      """
+      Handles requests to the intersection data service.
+      """
+      rospy.loginfo("Received request for intersection data.")
+      return self.map_data.get_cdm_data()
 
 
 if __name__ == '__main__':
