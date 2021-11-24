@@ -6,46 +6,34 @@ import array
 import math
 from datetime import datetime, timedelta
 import collections
+from kalman import KalmanFilterHelper
 
 from gv_client.msg import GulliViewPosition
 
 # Constants
-NUM_SAMPLES = 3
 ROBOT_RADIUS = 0.25
 TIMEOUT_SEC = 3
+V_JITTER = 0.01
 
 # Variables
 robots = {}
 
 class Robot:
-    def __init__(self, name):
+    def __init__(self, name, initPos):
         self.name = name
-        self.buf = collections.deque(maxlen=NUM_SAMPLES) # historic positions
-        self.v = np.array([]) # current velocity
-        self.p = np.array([]) # current position
+        self.kalman = KalmanFilterHelper(initPos)
+        self.v = np.array([0, 0]) # current velocity
+        self.p = initPos # current position
         self.lastReceive = datetime.now()
 
     def receivePosition(self, p):
-        self.p = p
+        dt = (datetime.now() - self.lastReceive).total_seconds()
+        res = self.kalman.newData(dt, p)
+        self.p = np.array([res[0], res[1]])
+        self.v = np.array([res[2], res[3]])
+        if np.linalg.norm(self.v) < V_JITTER:
+            self.v = np.array([0., 0.])
         self.lastReceive = datetime.now()
-        self.buf.append((self.lastReceive, p))
-        self.__updateVel()
-
-    # Calculate new velocity, averaging the last
-    def __updateVel(self):
-        velSum = np.array([0, 0])
-        lastT = 0
-        lastP = np.array([0, 0])
-
-        for val in self.buf:
-            if lastT != 0:
-                dt = (val[0] - lastT).total_seconds()
-                dp = val[1] - lastP
-                velSum = velSum + (dp / dt)
-            lastT = val[0]
-            lastP = val[1]
-
-        self.v = velSum / self.buf.maxlen
 
     # Check for collision against all other robots
     def collisionCheck(self):
@@ -61,7 +49,7 @@ class Robot:
                 t = res
 
         if t > 0:
-            print("Collision in ", t, " seconds")
+            print("Collision in ", t, " seconds. v=", math.sqrt(np.dot(self.v, self.v)))
         else:
             print("Collision detected!")
 
@@ -109,9 +97,8 @@ def callback(pos):
 
     if robot is None:
         # Add new robot
-        robot = Robot(pos.tagId)
+        robot = Robot(pos.tagId, p)
         robots[pos.tagId] = robot
-        robot.receivePosition(p)
     else:
         robot.receivePosition(p)
         robot.collisionCheck()
