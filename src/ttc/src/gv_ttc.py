@@ -17,6 +17,7 @@ V_JITTER = 0.01
 
 # Variables
 robots = {}
+collision = False
 
 class Robot:
     def __init__(self, name, initPos):
@@ -37,21 +38,32 @@ class Robot:
 
     # Check for collision against all other robots
     def collisionCheck(self):
+        global collision
+
         t = float("inf")
+        n = 0
 
         for k, v in robots.items():
             if v == self:
                 continue
+
+            n = n + 1
 
             res = ttc(self, v)
 
             if 0 <= res < t:
                 t = res
 
-        if t > 0:
-            print("Collision in ", t, " seconds. v=", math.sqrt(np.dot(self.v, self.v)))
+        if n == 0:
+            print("Nothing to collide with. v=", np.linalg.norm(self.v))
+        elif t > 0:
+            print("Collision in ", t, " seconds. v=", np.linalg.norm(self.v))
         else:
-            print("Collision detected!")
+            if not collision:
+                print("Collision detected!")
+            collision = True
+            return
+        collision = False
 
 # Return time to collision in seconds between robot r1 and r2
 # Value is float in [0, inf). 0 means robots are currently collided.
