@@ -1,12 +1,14 @@
+import typing
 from abc import ABC, abstractmethod
 
-from mission_planner_node import MissionPlannerNode
+if typing.TYPE_CHECKING:
+    from mission_planner_node import MissionPlannerNode
 
 
 class Phase(ABC):
 
     @abstractmethod
-    def __init__(self, mission: MissionPlannerNode):
+    def __init__(self, mission: "MissionPlannerNode"):
         self.mission = mission
 
     @property

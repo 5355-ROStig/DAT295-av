@@ -1,13 +1,11 @@
 import rospy
 
-from mission_planner_node import MissionPlannerNode
-
 from phases.phase import Phase
 
 
 class CrossingPhase(Phase):
 
-    def __init__(self, mission: MissionPlannerNode):
+    def __init__(self, mission: "MissionPlannerNode"):
         super().__init__(mission)
         self.start_road = mission.start_road
         self.destination_road = mission.destination_road

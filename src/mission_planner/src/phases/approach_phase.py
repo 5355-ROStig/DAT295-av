@@ -1,12 +1,11 @@
 import rospy
 
-from mission_planner_node import MissionPlannerNode
 from phases.phase import Phase
 
 
 class ApproachPhase(Phase):
 
-    def __init__(self, mission: MissionPlannerNode):
+    def __init__(self, mission: "MissionPlannerNode"):
         super().__init__(mission)
         self.start_road = self.mission.start_road
         self.target_line = self.mission.start_line
