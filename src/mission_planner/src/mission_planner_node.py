@@ -1,5 +1,5 @@
 #!/bin/env python3
-import threading
+from collections import namedtuple
 from typing import List, Optional, Callable
 
 import rospy
@@ -15,14 +15,15 @@ from phases.leave_phase import LeavePhase
 from phases.phase import Phase
 
 
+Position = namedtuple('Position', ['x', 'y'])
+
+
 class MissionPlannerNode:
     def __init__(self):
         rospy.init_node('mission_planner_node', anonymous=True)
         rospy.loginfo("Starting mission planner node")
 
-        self.x: Optional[int] = None
-        self.y: Optional[int] = None
-        self._pos_lock = threading.Lock()
+        self.pos: Optional[Position] = None
 
         scenario_param = rospy.get_param('~scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
@@ -36,7 +37,7 @@ class MissionPlannerNode:
         except TimeoutError as e:
             rospy.logerr("Timeout while waiting for initial position")
             raise e
-        rospy.loginfo(f"Initial position received: ({self.x}, {self.y})")
+        rospy.loginfo(f"Initial position received: ({self.pos.x}, {self.pos.y})")
 
         # Query for environment/map data
         rospy.loginfo("Waiting for map data service")
@@ -117,13 +118,10 @@ class MissionPlannerNode:
         raise TimeoutError()
 
     def _initial_position_received(self) -> bool:
-        with self._pos_lock:
-            return self.x is not None and self.y is not None
+        return self.pos is not None
 
     def _position_cb(self, position_msg):
-        with self._pos_lock:
-            self.x = position_msg.x
-            self.y = position_msg.y
+        self.pos = Position(position_msg.x, position_msg.y)
 
     def _determine_starting_road(self):
         for road_section in (self.road_data.north, self.road_data.south, self.road_data.east, self.road_data.west):
@@ -148,20 +146,19 @@ class MissionPlannerNode:
                 max_x = max(road_section.left.x, road_section.right.x)
                 min_x = max_x - road_section.length
 
-            if (min_x <= self.x <= max_x) and (min_y <= self.y <= max_y):
+            if (min_x <= self.pos.x <= max_x) and (min_y <= self.pos.y <= max_y):
                 return road_section
 
     @staticmethod
     def _find_stopline(road_section):
         if road_section.name == 'N':
-            pos = min(road_section.left.y, road_section.right.y) - road_section.stopline_offset
+            return min(road_section.left.y, road_section.right.y) - road_section.stopline_offset
         elif road_section.name == 'S':
-            pos = min(road_section.left.y, road_section.right.y) + road_section.stopline_offset
+            return min(road_section.left.y, road_section.right.y) + road_section.stopline_offset
         elif road_section.name == 'E':
-            pos = min(road_section.left.x, road_section.right.x) + road_section.stopline_offset
+            return min(road_section.left.x, road_section.right.x) + road_section.stopline_offset
         elif road_section.name == 'W':
-            pos = min(road_section.left.x, road_section.right.x) - road_section.stopline_offset
-        return pos
+            return min(road_section.left.x, road_section.right.x) - road_section.stopline_offset
 
     def execute_mission(self):
         start_time = rospy.Time.now()
