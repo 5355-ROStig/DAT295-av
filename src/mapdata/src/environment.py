@@ -40,6 +40,8 @@ from geometry_msgs.msg import Pose, Quaternion, Point
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 
 from cdm_section import CDMSection
+import pickle
+from os.path import isfile
 
 
 class Map:
@@ -97,6 +99,16 @@ class Map:
 
         oc.info = MapMetaData(stamp, self.scale, width, height, origin)
 
+        # Speed up by using serialized occupancy grid data
+        pickle_path = f"{self._image_file}.pickle"
+        if isfile(pickle_path):
+            rospy.loginfo("Pickled OccupancyGrid found")
+            f = open(pickle_path, "rb")
+            oc.data = pickle.load(f)
+            f.close()
+            rospy.loginfo("Sending pickled OccupancyGrid")
+            return oc
+
         # If the grid is not cached, generate it
         if self._occupancy_grid is None:
             # Loop over all pixels, inverting the y-axis (height) to
@@ -118,5 +130,8 @@ class Map:
             # Use cached grid
             oc.data = self._occupancy_grid
 
-        rospy.loginfo("[Occupancy Grid] Sending grid")
+        rospy.loginfo("Pickling and sending OccupancyGrid...")
+        f = open(pickle_path, "wb")
+        pickle.dump(oc.data, f)
+        f.close()
         return oc

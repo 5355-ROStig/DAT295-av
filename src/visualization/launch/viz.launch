@@ -1,12 +1,16 @@
 <launch>
-<node name="rviz" pkg="rviz" type="rviz" args="-d $(find visualization)/launch/config.rviz" />
+
+<env name="ROSCONSOLE_FORMAT" value="[${severity}] [${time}] [${node}]: ${message}" />
+
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find visualization)/launch/config.rviz" output="screen" />
 
 <!-- Start a gulliview_client with default parameters (port=2121, tags=all) -->
-<node name="gulliview_client" pkg="gv_client" type="gv_socket_server.py" args="_tag_id:=all" />
+<node name="gulliview_client" pkg="gv_client" type="gv_socket_server.py" args="_tag_id:=all" output="screen" />
 
 <!-- We want to visualize the OccupancyGrid -->
 <node name="mapdata_server" pkg="mapdata" type="map_data_node.py" 
-      args="_map_name:='eg5355' _scenario:='scenario1'" />
+      args="_map_name:='eg5355' _scenario:='scenario1'"
+      output="screen" />
 
-<node name="visualization" pkg="visualization" type="marker_viz.py" />
+<node name="visualization" pkg="visualization" type="marker_viz.py" output="screen" />
 </launch>
