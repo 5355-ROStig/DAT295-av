@@ -1,4 +1,5 @@
 import rospy
+from geometry_msgs.msg import Twist
 
 from phases.phase import Phase
 
@@ -11,22 +12,43 @@ class ApproachPhase(Phase):
         self.target_line = self.mission.start_line
 
         if self.start_road.name == 'N':
-            ...
-
-        self.condition_exp = ...
+            self.condition_exp = lambda: self.mission.pos.y >= self.target_line
+        elif self.start_road.name == 'S':
+            self.condition_exp = lambda: self.mission.pos.y <= self.target_line
+        elif self.start_road.name == 'E':
+            self.condition_exp = lambda: self.mission.pos.x >= self.target_line
+        elif self.start_road.name == 'W':
+            self.condition_exp = lambda: self.mission.pos.x <= self.target_line
 
     @property
     def name(self):
         return "Approach intersection"
 
     def begin(self):
-        rospy.sleep(1)
+        pass
 
     def run(self):
-        pass
+        print(self.mission.pos.y, self.target_line)
+        twist = Twist()
+        twist.linear.x = 0.1
+        twist.linear.y = 0
+        twist.linear.z = 0
+        twist.angular.x = 0
+        twist.angular.y = 0
+        twist.angular.z = 0
+        rospy.loginfo(f"Publishing: {twist}")
+        self.mission.cmd_vel_pub.publish(twist)
 
     def finish(self):
-        pass
+        twist = Twist()
+        twist.linear.x = 0
+        twist.linear.y = 0
+        twist.linear.z = 0
+        twist.angular.x = 0
+        twist.angular.y = 0
+        twist.angular.z = 0
+        rospy.loginfo(f"Publishing: {twist}")
+        self.mission.cmd_vel_pub.publish(twist)
 
     def condition(self):
-        return True
+        return self.condition_exp()

@@ -3,6 +3,7 @@ from collections import namedtuple
 from typing import List, Optional, Callable
 
 import rospy
+from geometry_msgs.msg import Twist
 
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
@@ -94,6 +95,8 @@ class MissionPlannerNode:
         rospy.loginfo("========== END OF SUMMARY ==========")
         rospy.loginfo("")
 
+        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+
         self.execute_mission()
 
     @staticmethod
@@ -148,6 +151,8 @@ class MissionPlannerNode:
 
             if (min_x <= self.pos.x <= max_x) and (min_y <= self.pos.y <= max_y):
                 return road_section
+        raise RuntimeError("Unable to determine starting road! "
+                           "Make sure robot is positioned properly")
 
     @staticmethod
     def _find_stopline(road_section):
@@ -167,8 +172,10 @@ class MissionPlannerNode:
             phase.begin()
 
             rospy.loginfo("Running phase")
-            while not phase.condition():
+            rate = rospy.Rate(10)
+            while not phase.condition() and not rospy.is_shutdown():
                 phase.run()
+                rate.sleep()
 
             rospy.loginfo("Finishing phase")
             phase.finish()
