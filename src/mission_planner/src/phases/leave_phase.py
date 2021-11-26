@@ -1,15 +1,16 @@
 import rospy
 
-from mapdata.msg import RoadSection, StopLine
+from mission_planner_node import MissionPlannerNode
 
 from phases.phase import Phase
 
 
 class LeavePhase(Phase):
 
-    def __init__(self, destination_road: RoadSection, stop_line: StopLine):
-        self.destination_road = destination_road
-        self.target_line = stop_line
+    def __init__(self, mission: MissionPlannerNode):
+        super().__init__(mission)
+        self.destination_road = self.mission.destination_road
+        self.target_line = self.mission.stop_line
 
     @property
     def name(self):

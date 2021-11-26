@@ -1,15 +1,20 @@
 import rospy
 
-from mapdata.msg import RoadSection, StopLine
-
+from mission_planner_node import MissionPlannerNode
 from phases.phase import Phase
 
 
 class ApproachPhase(Phase):
 
-    def __init__(self, start_road: RoadSection, start_line: StopLine):
-        self.start_road = start_road
-        self.target_line = start_line
+    def __init__(self, mission: MissionPlannerNode):
+        super().__init__(mission)
+        self.start_road = self.mission.start_road
+        self.target_line = self.mission.start_line
+
+        if self.start_road.name == 'N':
+            ...
+
+        self.condition_exp = ...
 
     @property
     def name(self):

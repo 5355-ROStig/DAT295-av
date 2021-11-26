@@ -68,11 +68,10 @@ class MissionPlannerNode:
 
         rospy.loginfo("Generating mission phases")
         self.phases: List[Phase] = [
-            ApproachPhase(start_road=self.start_road, start_line=self.start_line),
-            CoordinationPhase(start_road=self.start_road),
-            CrossingPhase(start_road=self.start_road, destination_road=self.destination_road,
-                          stop_line=self.stop_line),
-            LeavePhase(self.destination_road, self.stop_line)
+            ApproachPhase(mission=self),
+            CoordinationPhase(mission=self),
+            CrossingPhase(mission=self),
+            LeavePhase(mission=self)
         ]
 
         priority_sign_names = {

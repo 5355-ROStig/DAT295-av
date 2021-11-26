@@ -1,15 +1,15 @@
 import rospy
 
-from mapdata.msg import RoadSection
-
 from coordination_strategies import COORDINATION_STRATEGIES
+from mission_planner_node import MissionPlannerNode
 from phases.phase import Phase
 
 
 class CoordinationPhase(Phase):
 
-    def __init__(self, start_road: RoadSection):
-        self.start_road = start_road
+    def __init__(self, mission: MissionPlannerNode):
+        super().__init__(mission)
+        self.start_road = self.mission.start_road
         self.strategy = COORDINATION_STRATEGIES[self.start_road.priority_sign]()
 
     @property
