@@ -23,5 +23,6 @@
         output="screen" />
   <node name="mission_planner" pkg="mission_planner" type="mission_planner_node.py"
         args="_scenario:=$(arg scenario)" output="screen" />
+  <node name="teleop_joy" pkg="roswifibot" type="wifibot_teleop_joy.py" />
 </group>
 </launch>
