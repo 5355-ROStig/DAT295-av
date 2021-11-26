@@ -86,7 +86,7 @@ class MapData:
 
         # Distances are given in mm
         road_length = 1500
-        offset = 300
+        offset = 400
 
         # Measurements from the room (blue tape corners) they don't make sense
         # without the whiteboard image from Slack
