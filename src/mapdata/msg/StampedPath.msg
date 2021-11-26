@@ -1,1 +1,0 @@
-StampedPosition[] path

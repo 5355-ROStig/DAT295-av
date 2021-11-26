@@ -49,23 +49,9 @@ find_package(catkin REQUIRED
 ## Generate messages in the 'msg' folder
 add_message_files(
     FILES
-    # GulliViewPositions.msg
-    # Path.msg
     Position.msg
-    # TruckState.msg
-    # Intersection_Action.msg
-    # StampedPath.msg
-    # StampedPosition.msg
-    # V2I.msg
-    # SchedulePhase.msg
-    # ScheduleState.msg
-    # VTLPath.msg
-    # VTLPosition.msg
     CDMConnectionZone.msg
     CDMSection.msg
-    # CarState.msg
-    # CarInFront.msg
-    # inFront.msg
     RoadSection.msg
 )
 

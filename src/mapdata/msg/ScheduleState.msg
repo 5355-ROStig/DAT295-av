@@ -1,3 +1,0 @@
-SchedulePhase now
-SchedulePhase next
-SchedulePhase tentative
