@@ -14,7 +14,7 @@ class CoordinationPhase(Phase):
 
     @property
     def name(self):
-        return "Coordination"
+        return f"Coordination (strategy: {self.strategy.__class__.__name__})"
 
     def begin(self):
         rospy.sleep(1)

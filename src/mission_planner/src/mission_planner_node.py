@@ -50,16 +50,21 @@ class MissionPlannerNode:
             rospy.signal_shutdown()
         rospy.loginfo("Retrieved map data")
 
-        # Figure out on which road we are located
         rospy.loginfo("Determining mission parameters")
-        # TODO: Implement this part and replace the placeholders here
-        self.start_road = RoadSection()
+        # Figure out which road we are starting from
+        self.start_road = self._determine_starting_road()
 
         # Figure out the other mission parameters
-        # self.priority_sign = None
-        self.destination_road = RoadSection()
-        self.start_line = StopLine()
-        self.stop_line = StopLine()
+        destinations = {
+            'N': self.road_data.south,
+            'S': self.road_data.north,
+            'E': self.road_data.west,
+            'W': self.road_data.east
+        }
+
+        self.destination_road = destinations[self.start_road.name]
+        self.start_line = self._find_stopline(self.start_road)
+        self.stop_line = self._find_stopline(self.destination_road)
 
         rospy.loginfo("Generating mission phases")
         self.phases: List[Phase] = [
@@ -70,9 +75,17 @@ class MissionPlannerNode:
             LeavePhase(self.destination_road, self.stop_line)
         ]
 
+        priority_sign_names = {
+            RoadSection.PRIORITY_ROAD: "Priority Road",
+            RoadSection.GIVE_WAY: "Give Way",
+            RoadSection.STOP_SIGN: "Stop Sign",
+            RoadSection.TRAFFIC_LIGHT: "Traffic light"
+        }
+
         rospy.loginfo("")
         rospy.loginfo("========== MISSION SUMMARY ==========")
-        rospy.loginfo(f"Travelling from: {self.start_road.name}, my priority sign is: {self.start_road.priority_sign}")
+        rospy.loginfo(f"Travelling from: {self.start_road.name}, my priority sign is: "
+                      f"{priority_sign_names[self.start_road.priority_sign]}")
         rospy.loginfo(f"Destination: {self.destination_road.name}")
         rospy.loginfo("")
         rospy.loginfo("Mission phases:")
@@ -113,6 +126,44 @@ class MissionPlannerNode:
             self.x = position_msg.x
             self.y = position_msg.y
 
+    def _determine_starting_road(self):
+        for road_section in (self.road_data.north, self.road_data.south, self.road_data.east, self.road_data.west):
+            if road_section.name == 'N':
+                min_x = road_section.right.x
+                max_x = road_section.left.x
+                max_y = max(road_section.left.y, road_section.right.y)
+                min_y = max_y - road_section.length
+            elif road_section.name == 'S':
+                min_x = road_section.left.x
+                max_x = road_section.right.x
+                min_y = min(road_section.left.y, road_section.right.y)
+                max_y = min_y + road_section.length
+            elif road_section.name == 'E':
+                min_y = road_section.right.y
+                max_y = road_section.left.y
+                min_x = min(road_section.left.x, road_section.right.x)
+                max_x = min_x + road_section.length
+            elif road_section.name == 'W':
+                min_y = road_section.left.y
+                max_y = road_section.right.y
+                max_x = max(road_section.left.x, road_section.right.x)
+                min_x = max_x - road_section.length
+
+            if (min_x <= self.x <= max_x) and (min_y <= self.y <= max_y):
+                return road_section
+
+    @staticmethod
+    def _find_stopline(road_section):
+        if road_section.name == 'N':
+            pos = min(road_section.left.y, road_section.right.y) - road_section.stopline_offset
+        elif road_section.name == 'S':
+            pos = min(road_section.left.y, road_section.right.y) + road_section.stopline_offset
+        elif road_section.name == 'E':
+            pos = min(road_section.left.x, road_section.right.x) + road_section.stopline_offset
+        elif road_section.name == 'W':
+            pos = min(road_section.left.x, road_section.right.x) - road_section.stopline_offset
+        return pos
+
     def execute_mission(self):
         start_time = rospy.Time.now()
         for phase_idx, phase in enumerate(self.phases, start=1):
@@ -134,4 +185,4 @@ class MissionPlannerNode:
 if __name__ == '__main__':
     mission_planner = MissionPlannerNode()
 
-    rospy.spin()
+    # rospy.spin()
