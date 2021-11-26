@@ -8,4 +8,4 @@ Assumes
 
 To start:
 
-    rosrun visualization marker_viz.py
+    roslaunch visualization viz.launch
