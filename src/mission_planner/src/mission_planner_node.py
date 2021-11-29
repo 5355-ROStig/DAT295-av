@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist
 
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
-from mapdata.msg import RoadSection
+from mapdata.msg import RoadSection, StopLine
 
 from phases.approach_phase import ApproachPhase
 from phases.coordination_phase import CoordinationPhase

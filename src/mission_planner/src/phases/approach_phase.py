@@ -16,9 +16,9 @@ class ApproachPhase(Phase):
         elif self.start_road.name == 'S':
             self.condition_exp = lambda: self.mission.pos.y <= self.target_line
         elif self.start_road.name == 'E':
-            self.condition_exp = lambda: self.mission.pos.x >= self.target_line
-        elif self.start_road.name == 'W':
             self.condition_exp = lambda: self.mission.pos.x <= self.target_line
+        elif self.start_road.name == 'W':
+            self.condition_exp = lambda: self.mission.pos.x >= self.target_line
 
     @property
     def name(self):
@@ -30,7 +30,7 @@ class ApproachPhase(Phase):
     def run(self):
         print(self.mission.pos.y, self.target_line)
         twist = Twist()
-        twist.linear.x = 0.1
+        twist.linear.x = 0.35
         twist.linear.y = 0
         twist.linear.z = 0
         twist.angular.x = 0

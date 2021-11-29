@@ -1,4 +1,5 @@
 import rospy
+from geometry_msgs.msg import Twist
 
 from phases.phase import Phase
 
@@ -11,6 +12,15 @@ class CrossingPhase(Phase):
         self.destination_road = mission.destination_road
         self.target_line = mission.stop_line
 
+        if self.destination_road.name == 'N':
+            self.condition_exp = lambda: self.mission.pos.y <= self.target_line
+        elif self.destination_road.name == 'S':
+            self.condition_exp = lambda: self.mission.pos.y >= self.target_line
+        elif self.destination_road.name == 'E':
+            self.condition_exp = lambda: self.mission.pos.x >= self.target_line
+        elif self.destination_road.name == 'W':
+            self.condition_exp = lambda: self.mission.pos.x <= self.target_line
+
     @property
     def name(self):
         return "Enter and cross intersection"
@@ -19,10 +29,26 @@ class CrossingPhase(Phase):
         rospy.sleep(1)
 
     def run(self):
-        pass
+        twist = Twist()
+        twist.linear.x = 0.35
+        twist.linear.y = 0
+        twist.linear.z = 0
+        twist.angular.x = 0
+        twist.angular.y = 0
+        twist.angular.z = 0
+        rospy.loginfo(f"Publishing: {twist}")
+        self.mission.cmd_vel_pub.publish(twist)
 
     def finish(self):
-        pass
+        twist = Twist()
+        twist.linear.x = 0
+        twist.linear.y = 0
+        twist.linear.z = 0
+        twist.angular.x = 0
+        twist.angular.y = 0
+        twist.angular.z = 0
+        rospy.loginfo(f"Publishing: {twist}")
+        self.mission.cmd_vel_pub.publish(twist)
 
     def condition(self):
-        return True
+        return self.condition_exp()
