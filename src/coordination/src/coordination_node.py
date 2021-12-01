@@ -189,10 +189,10 @@ class IntersectionPacketHandler(BaseRequestHandler):
 
 
 if __name__ == '__main__':
-    coordination_node = CoordinationNode()
-
     host = "0.0.0.0"
     port = rospy.get_param("~port", default=2323)
+
+    coordination_node = CoordinationNode(port)
 
     IntersectionPacketHandler.coordinator_node = coordination_node
 
