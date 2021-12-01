@@ -164,7 +164,7 @@ class CoordinationNode:
             "CROAD": self.start_road.name
         }
 
-        while not self.other_enter_rcvd:
+        while not self.enter_rcvd:
             # Send data as json
             s.sendto(bytes(json.dump(enter_msg), "utf-8"), (BROADCAST_IP, self.port))
         
