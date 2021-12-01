@@ -8,7 +8,7 @@ from std_msgs.msg import Empty
 
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
-from mapdata.msg import RoadSection, StopLine
+from mapdata.msg import RoadSection
 
 from phases.approach_phase import ApproachPhase
 from phases.coordination_phase import CoordinationPhase
@@ -33,7 +33,7 @@ class MissionPlannerNode:
         rospy.Subscriber('gv_positions', GulliViewPosition, self._position_cb)
 
         self.go = False
-        rospy.Subscriber('go', Empty, self._reveice_go)
+        rospy.Subscriber('go', Empty, self._receive_go)
 
         # Wait for initial position data
         try:

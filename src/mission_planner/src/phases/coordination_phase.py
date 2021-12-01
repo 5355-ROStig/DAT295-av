@@ -1,5 +1,7 @@
 import rospy
 
+from geometry_msgs.msg import Twist
+
 from coordination_strategies import COORDINATION_STRATEGIES
 from phases.phase import Phase
 

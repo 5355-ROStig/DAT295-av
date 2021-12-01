@@ -1,5 +1,7 @@
 import rospy
 
+from geometry_msgs.msg import Twist
+
 from phases.phase import Phase
 from std_msgs.msg import Empty
 
