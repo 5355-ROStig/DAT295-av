@@ -26,7 +26,7 @@ class CrossingPhase(Phase):
         return "Enter and cross intersection"
 
     def begin(self):
-        rospy.sleep(1)
+        pass
 
     def run(self):
         twist = Twist()
@@ -36,7 +36,6 @@ class CrossingPhase(Phase):
         twist.angular.x = 0
         twist.angular.y = 0
         twist.angular.z = 0
-        rospy.loginfo(f"Publishing: {twist}")
         self.mission.cmd_vel_pub.publish(twist)
 
     def finish(self):
@@ -47,7 +46,6 @@ class CrossingPhase(Phase):
         twist.angular.x = 0
         twist.angular.y = 0
         twist.angular.z = 0
-        rospy.loginfo(f"Publishing: {twist}")
         self.mission.cmd_vel_pub.publish(twist)
 
     def condition(self):

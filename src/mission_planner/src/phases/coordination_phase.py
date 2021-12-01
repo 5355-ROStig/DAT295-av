@@ -18,7 +18,7 @@ class CoordinationPhase(Phase):
         return f"Coordination (strategy: {self.strategy.__class__.__name__})"
 
     def begin(self):
-        self.run()
+        pass
 
     def run(self):
         if not self.condition():

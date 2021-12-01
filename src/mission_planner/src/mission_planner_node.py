@@ -132,6 +132,7 @@ class MissionPlannerNode:
         self.pos = Position(position_msg.x, position_msg.y)
 
     def _receive_go(self, _):
+        rospy.loginfo("Received go!")
         self.go = True
 
     def _determine_starting_road(self):
