@@ -27,15 +27,13 @@ class CoordinationNode:
 
         self.port = port
         self.tag_id = rospy.get_param("/tag_id")
-        assert isinstance(self.tag_id, int)
-
 
         # Flags for coordination stages
         self.enter_rcvd = False
         self.ack_rcvd = False
         self.exit_rcvd = False
         self.should_send_exit = False  # /exit ros topic
-        
+
         scenario_param = rospy.get_param('~scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
 
@@ -164,9 +162,12 @@ class CoordinationNode:
             "CROAD": self.start_road.name
         }
 
-        while not self.enter_rcvd:
+        rate = rospy.Rate(10)
+        
+        while not self.enter_rcvd and not rospy.is_shutdown():
             # Send data as json
             s.sendto(bytes(json.dumps(enter_msg), "utf-8"), (BROADCAST_IP, self.port))
+            rate.sleep()
 
         # Temp
         rospy.Publisher("/go", Empty, queue_size=1).publish(Empty())
@@ -179,13 +180,17 @@ class IntersectionPacketHandler(BaseRequestHandler):
 
     def handle(self):
         msg = json.loads(self.request[0])
+        
+        if msg['UID'] == self.coordinator_node.tag_id:
+            return
+        
         rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
         if msg["MSGTYPE"] == "ENTER":
-            self.enter_rcvd = True
+            self.coordinator_node.enter_rcvd = True
         elif msg["MSGTYPE"] == "ACK":
-            self.ack_rcvd = True
+            self.coordinator_node.ack_rcvd = True
         elif msg["MSGTYPE"] == "EXIT":
-            self.exit_rcvd = True
+            self.coordinator_node.exit_rcvd = True
 
 
 if __name__ == '__main__':
