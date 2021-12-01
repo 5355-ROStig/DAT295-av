@@ -9,7 +9,7 @@ class KalmanFilterHelper:
         self.filter = KalmanFilter(dim_x=4, dim_z=2)
 
         # Initial state
-        self.filter.x = np.array([initPos[0], initPos[1], 0., 0.]) # Should maybe set the position correctly?
+        self.filter.x = np.array([initPos[0], initPos[1], 0., 0.])
 
         # Measurement transition matrix (maps z to x)
         self.filter.H = np.array(

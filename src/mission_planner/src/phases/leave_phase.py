@@ -1,7 +1,7 @@
 import rospy
 
 from phases.phase import Phase
-
+from std_msgs.msg import Empty
 
 class LeavePhase(Phase):
 
@@ -15,7 +15,16 @@ class LeavePhase(Phase):
         return "Leave intersection"
 
     def begin(self):
-        rospy.sleep(1)
+        twist = Twist()
+        twist.linear.x = 0
+        twist.linear.y = 0
+        twist.linear.z = 0
+        twist.angular.x = 0
+        twist.angular.y = 0
+        twist.angular.z = 0
+        self.mission.cmd_vel_pub.publish(twist)
+        self.mission.exit_pub.publish(Empty())
+        rospy.loginfo("I have left!")
 
     def run(self):
         pass

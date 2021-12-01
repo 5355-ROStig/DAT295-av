@@ -40,15 +40,7 @@ class ApproachPhase(Phase):
         self.mission.cmd_vel_pub.publish(twist)
 
     def finish(self):
-        twist = Twist()
-        twist.linear.x = 0
-        twist.linear.y = 0
-        twist.linear.z = 0
-        twist.angular.x = 0
-        twist.angular.y = 0
-        twist.angular.z = 0
-        rospy.loginfo(f"Publishing: {twist}")
-        self.mission.cmd_vel_pub.publish(twist)
+        pass
 
     def condition(self):
         return self.condition_exp()

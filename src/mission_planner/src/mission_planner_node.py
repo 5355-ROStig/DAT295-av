@@ -4,6 +4,7 @@ from typing import List, Optional, Callable
 
 import rospy
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Empty
 
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
@@ -30,6 +31,9 @@ class MissionPlannerNode:
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
 
         rospy.Subscriber('gv_positions', GulliViewPosition, self._position_cb)
+
+        self.go = False
+        rospy.Subscriber('go', Empty, self._reveice_go)
 
         # Wait for initial position data
         try:
@@ -96,6 +100,7 @@ class MissionPlannerNode:
         rospy.loginfo("")
 
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+        self.exit_pub = rospy.Publisher('exit', Empty, queue_size=1)
 
         self.execute_mission()
 
@@ -125,6 +130,9 @@ class MissionPlannerNode:
 
     def _position_cb(self, position_msg):
         self.pos = Position(position_msg.x, position_msg.y)
+
+    def _receive_go(self, _):
+        self.go = True
 
     def _determine_starting_road(self):
         for road_section in (self.road_data.north, self.road_data.south, self.road_data.east, self.road_data.west):
