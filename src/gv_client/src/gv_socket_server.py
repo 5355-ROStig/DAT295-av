@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     host = rospy.get_param("~host", default="0.0.0.0")
     port = rospy.get_param("~port", default=2121)
-    listen_tag_id = rospy.get_param("~tag_id", default="all")
+    listen_tag_id = rospy.get_param("/tag_id", default="all")
 
     # Set static variables on packet handler class to pass information to its instances
     GulliViewPacketHandler.publisher = rospy.Publisher(topic, GulliViewPosition, queue_size=10)

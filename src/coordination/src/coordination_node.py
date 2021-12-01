@@ -3,6 +3,8 @@ import threading
 from collections import namedtuple
 from typing import List, Optional, Callable
 from socketserver import UDPServer, BaseRequestHandler
+import socket
+import json
 
 import rospy
 from geometry_msgs.msg import Twist
@@ -10,17 +12,29 @@ from geometry_msgs.msg import Twist
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
 from mapdata.msg import RoadSection
+from std_msgs.msg import Empty
 
 
 Position = namedtuple('Position', ['x', 'y'])
 
 
 class CoordinationNode:
-    def __init__(self):
+    def __init__(self, port):
         rospy.init_node('coordination_node', anonymous=True)
         rospy.loginfo("Starting intersection coordination protocol node")
 
         self.pos: Optional[Position] = None
+
+        self.port = port
+        self.tag_id = rospy.get_param("/tag_id")
+        assert isinstance(self.tag_id, int)
+
+
+        # Flags for coordination stages
+        self.enter_rcvd = False
+        self.ack_rcvd = False
+        self.exit_rcvd = False
+        self.should_send_exit = False  # /exit ros topic
         
         scenario_param = rospy.get_param('~scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
@@ -138,7 +152,25 @@ class CoordinationNode:
             return min(road_section.left.x, road_section.right.x) - road_section.stopline_offset
 
     def execute_protocol(self):
-        ...
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+        BROADCAST_IP = "192.168.1.255"
+
+        # CROAD = current road
+        enter_msg = {
+            "UID": self.tag_id,
+            "MSGTYPE": "ENTER",
+            "CROAD": self.start_road.name
+        }
+
+        while not self.other_enter_rcvd:
+            # Send data as json
+            s.sendto(bytes(json.dump(enter_msg), "utf-8"), (BROADCAST_IP, self.port))
+        
+        # Temp
+        rospy.Publisher("/go", Empty, queue_size=1).publish(Empty())
+
 
 class IntersectionPacketHandler(BaseRequestHandler):
     """
@@ -146,12 +178,14 @@ class IntersectionPacketHandler(BaseRequestHandler):
     coordinator_node = None  # Static reference to ROS topic publisher
 
     def handle(self):
-        
-        # if self.request type == ACK
-        # 	self.coordinator_node.ack_received = True
-        # osv osv
-        rospy.loginfo(f"Received packet: {self.request}")
-        ...
+        msg = json.loads(self.request[0])
+        rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
+        if msg["MSGTYPE"] == "ENTER":
+            self.enter_rcvd = True
+        elif msg["MSGTYPE"] == "ACK":
+            self.ack_rcvd = True
+        elif msg["MSGTYPE"] == "EXIT":
+            self.exit_rcvd = True
 
 
 if __name__ == '__main__':
