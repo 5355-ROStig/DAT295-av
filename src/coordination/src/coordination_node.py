@@ -13,7 +13,7 @@ from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
 from mapdata.msg import RoadSection
 from std_msgs.msg import Empty
-
+from coordination_strategies import COORDINATION_STRATEGIES
 
 Position = namedtuple('Position', ['x', 'y'])
 BROADCAST_IP = "192.168.1.255"
@@ -77,6 +77,7 @@ class CoordinationNode:
         self.destination_road = destinations[self.start_road.name]
         self.start_line = self._find_stopline(self.start_road)
         self.stop_line = self._find_stopline(self.destination_road)
+        self.strategy = COORDINATION_STRATEGIES[self.start_road.priority_sign]()
 
         priority_sign_names = {
             RoadSection.PRIORITY_ROAD: "Priority Road",
@@ -84,6 +85,7 @@ class CoordinationNode:
             RoadSection.STOP_SIGN: "Stop Sign",
             RoadSection.TRAFFIC_LIGHT: "Traffic light"
         }
+
 
     @staticmethod
     def _await(condition: Callable[[], bool], rate: int = 2, timeout: float = 10.0):
