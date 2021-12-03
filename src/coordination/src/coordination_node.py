@@ -227,7 +227,7 @@ class CoordinationNode:
             rate.sleep()
 
 
-    def _receive_exit(self):
+    def _receive_exit(self, _):
         rospy.loginfo("/exit received from mission planner")
         self.exit_topic_rcvd = True
 
