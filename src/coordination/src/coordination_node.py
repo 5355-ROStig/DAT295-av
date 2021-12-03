@@ -179,6 +179,10 @@ class CoordinationNode:
             rate.sleep()
 
         rospy.loginfo("ENTER received, waiting for ACK...")
+
+        # ACK
+        data = bytes(json.dumps(ack_msg), "utf-8")
+        s.sendto(data, (BROADCAST_IP, self.port))
         while not self.ack_rcvd and not rospy.is_shutdown():
             # We still send ENTER in case the other bot is still waiting for ours
             data = bytes(json.dumps(enter_msg), "utf-8")
@@ -196,6 +200,7 @@ class CoordinationNode:
         while self.tag_id == 5 and not rospy.is_shutdown():
             # 5 will sleep
             rate.sleep()
+        
 
         # Other bot should go
         rospy.loginfo("Sending /go")
