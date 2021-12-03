@@ -18,7 +18,8 @@ class CoordinationPhase(Phase):
         return f"Coordination (strategy: {self.strategy.__class__.__name__})"
 
     def begin(self):
-        pass
+        if not self.condition():
+            rospy.loginfo("Waiting for go signal...")
 
     def run(self):
         if not self.condition():
@@ -30,7 +31,6 @@ class CoordinationPhase(Phase):
             twist.angular.y = 0
             twist.angular.z = 0
             self.mission.cmd_vel_pub.publish(twist)
-            rospy.loginfo("Waiting for go signal...")
 
     def finish(self):
         rospy.loginfo("I have permission to enter!")

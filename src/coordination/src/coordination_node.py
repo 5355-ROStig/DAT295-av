@@ -26,6 +26,7 @@ class CoordinationNode:
         self.pos: Optional[Position] = None
 
         self.port = port
+        # Global tag id parameter
         self.tag_id = rospy.get_param("/tag_id")
 
         # Flags for coordination stages
@@ -162,15 +163,45 @@ class CoordinationNode:
             "CROAD": self.start_road.name
         }
 
-        rate = rospy.Rate(10)
+        ack_msg = {
+            "UID": self.tag_id,
+            "MSGTYPE": "ACK"
+        }
+
+        rate = rospy.Rate(10)  # 10 Hz
         
+        rospy.loginfo("Waiting for ENTER...")
         while not self.enter_rcvd and not rospy.is_shutdown():
             # Send data as json
-            s.sendto(bytes(json.dumps(enter_msg), "utf-8"), (BROADCAST_IP, self.port))
+            data = bytes(json.dumps(enter_msg), "utf-8")
+
+            s.sendto(data, (BROADCAST_IP, self.port))
             rate.sleep()
 
-        # Temp
-        rospy.Publisher("/go", Empty, queue_size=1).publish(Empty())
+        rospy.loginfo("ENTER received, waiting for ACK...")
+        while not self.ack_rcvd and not rospy.is_shutdown():
+            # We still send ENTER in case the other bot is still waiting for ours
+            data = bytes(json.dumps(enter_msg), "utf-8")
+            s.sendto(data, (BROADCAST_IP, self.port))
+
+            # ACK
+            data = bytes(json.dumps(ack_msg), "utf-8")
+            s.sendto(data, (BROADCAST_IP, self.port))
+
+            rate.sleep()
+
+        rospy.loginfo("ACK received, resolving priority...")
+
+        # TODO Change this. For testing we just let one car get priority for now.
+        while self.tag_id == 5 and not rospy.is_shutdown():
+            # 5 will sleep
+            rate.sleep()
+
+        # Other bot should go
+        rospy.loginfo("Sending /go")
+        while True:
+            rospy.Publisher("/go", Empty, queue_size=1).publish(Empty())
+            rate.sleep()
 
 
 class IntersectionPacketHandler(BaseRequestHandler):
@@ -181,7 +212,8 @@ class IntersectionPacketHandler(BaseRequestHandler):
     def handle(self):
         msg = json.loads(self.request[0])
         
-        if msg['UID'] == self.coordinator_node.tag_id:
+        if msg['UID'] == self.coordinator_node.tag_id:  
+            # Ignore our own broadcasts
             return
         
         rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
