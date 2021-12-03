@@ -154,6 +154,8 @@ class CoordinationNode:
     def execute_protocol(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        # Init the publisher here so subscribers have enough time to register it (?)
+        go_pub = rospy.Publisher("/go", Empty, queue_size=1)
 
         enter_msg = {
             "UID": self.tag_id,
@@ -207,7 +209,7 @@ class CoordinationNode:
                 rate.sleep()
 
         rospy.loginfo("Sending /go to mission planner")
-        rospy.Publisher("/go", Empty, queue_size=1).publish(Empty())
+        go_pub.publish(Empty())
 
         rospy.Subscriber("exit", Empty, self._receive_exit)
         rospy.loginfo("Sending ACKs until mission planner says I've crossed")
