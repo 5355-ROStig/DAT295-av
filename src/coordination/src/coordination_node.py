@@ -215,7 +215,7 @@ class CoordinationNode:
             # ACK
             data = bytes(json.dumps(ack_msg), "utf-8")
             s.sendto(data, (BROADCAST_IP, self.port))
-            rospy.sleep()
+            rate.sleep()
 
         rospy.loginfo("Spamming EXIT for all eternity :)")
         while not rospy.is_shutdown():
