@@ -16,6 +16,7 @@ from std_msgs.msg import Empty
 
 
 Position = namedtuple('Position', ['x', 'y'])
+BROADCAST_IP = "192.168.1.255"
 
 
 class CoordinationNode:
@@ -33,7 +34,7 @@ class CoordinationNode:
         self.enter_rcvd = False
         self.ack_rcvd = False
         self.exit_rcvd = False
-        self.should_send_exit = False  # /exit ros topic
+        self.exit_topic_rcvd = False  # /exit ros topic
 
         scenario_param = rospy.get_param('~scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
@@ -154,18 +155,20 @@ class CoordinationNode:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-        BROADCAST_IP = "192.168.1.255"
-
-        # CROAD = current road
         enter_msg = {
             "UID": self.tag_id,
             "MSGTYPE": "ENTER",
-            "CROAD": self.start_road.name
+            "CROAD": self.start_road.name  # CROAD=current road
         }
 
         ack_msg = {
             "UID": self.tag_id,
             "MSGTYPE": "ACK"
+        }
+
+        exit_msg = {
+            "UID": self.tag_id,
+            "MSGTYPE": "EXIT"
         }
 
         rate = rospy.Rate(10)  # 10 Hz
@@ -196,22 +199,38 @@ class CoordinationNode:
 
         rospy.loginfo("ACK received, resolving priority...")
 
-        # TODO Change this. For testing we just let one car get priority for now.
-        while self.tag_id == 5 and not rospy.is_shutdown():
-            # 5 will sleep
-            rate.sleep()
-        
+        if self.tag_id == 5:  # for testing, let 6 go first
+            while not self.exit_rcvd and not rospy.is_shutdown():
+                # ACK
+                data = bytes(json.dumps(ack_msg), "utf-8")
+                s.sendto(data, (BROADCAST_IP, self.port))
+                rate.sleep()
 
-        # Other bot should go
-        rospy.loginfo("Sending /go")
-        while True:
-            rospy.Publisher("/go", Empty, queue_size=1).publish(Empty())
+        rospy.loginfo("Sending /go to mission planner")
+        rospy.Publisher("/go", Empty, queue_size=1).publish(Empty())
+
+        rospy.Subscriber("exit", Empty, self._receive_exit)
+        rospy.loginfo("Sending ACKs until mission planner says I've crossed")
+        while not self.exit_topic_rcvd and not rospy.is_shutdown():
+            # ACK
+            data = bytes(json.dumps(ack_msg), "utf-8")
+            s.sendto(data, (BROADCAST_IP, self.port))
+            rospy.sleep()
+
+        rospy.loginfo("Spamming EXIT for all eternity :)")
+        while not rospy.is_shutdown():
+            # EXIT
+            data = bytes(json.dumps(exit_msg), "utf-8")
+            s.sendto(data, (BROADCAST_IP, self.port))
             rate.sleep()
+
+
+    def _receive_exit(self):
+        rospy.loginfo("/exit received from mission planner")
+        self.exit_topic_rcvd = True
 
 
 class IntersectionPacketHandler(BaseRequestHandler):
-    """
-    """
     coordinator_node = None  # Static reference to ROS topic publisher
 
     def handle(self):
@@ -221,7 +240,7 @@ class IntersectionPacketHandler(BaseRequestHandler):
             # Ignore our own broadcasts
             return
         
-        rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
+        # rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
         if msg["MSGTYPE"] == "ENTER":
             self.coordinator_node.enter_rcvd = True
         elif msg["MSGTYPE"] == "ACK":
