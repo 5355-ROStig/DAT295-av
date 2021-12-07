@@ -77,7 +77,7 @@ class CoordinationNode:
         self.destination_road = destinations[self.start_road.name]
         self.start_line = self._find_stopline(self.start_road)
         self.stop_line = self._find_stopline(self.destination_road)
-        self.strategy = COORDINATION_STRATEGIES[self.start_road.priority_sign]()
+        self.strategy: CoordinationStrategy = COORDINATION_STRATEGIES[self.start_road.priority_sign]()
 
         priority_sign_names = {
             RoadSection.PRIORITY_ROAD: "Priority Road",
@@ -203,7 +203,7 @@ class CoordinationNode:
 
         rospy.loginfo("ACK received, resolving priority...")
 
-        if self.tag_id == 5:  # for testing, let 6 go first
+        if not self.strategy.has_priority():
             while not self.exit_rcvd and not rospy.is_shutdown():
                 # ACK
                 data = bytes(json.dumps(ack_msg), "utf-8")
@@ -273,12 +273,3 @@ if __name__ == '__main__':
         rospy.loginfo("Node received shutdown signal, shutting down server")
         server.shutdown()
         rospy.loginfo("Server shutdown, exiting")
-
-
-
-
-
-
-
-
-
