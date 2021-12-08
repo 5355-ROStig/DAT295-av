@@ -34,10 +34,13 @@ class CoordinationNode:
         self.tag_id = rospy.get_param("/tag_id")
 
         # Flags for coordination stages
-        self.enter_rcvd = False
-        self.ack_rcvd = False
-        self.exit_rcvd = False
-        self.exit_topic_rcvd = False  # /exit ros topic
+        self._coordinator_lock = threading.Lock()
+        with self._coordinator_lock:
+            self.enter_rcvd = False
+            self.other_croad = None
+            self.ack_rcvd = False
+            self.exit_rcvd = False
+            self.exit_topic_rcvd = False  # /exit ros topic
 
         scenario_param = rospy.get_param('~scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
@@ -247,12 +250,14 @@ class IntersectionPacketHandler(BaseRequestHandler):
         
         # rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
 
-        if msg["MSGTYPE"] == "ENTER":
-            self.coordinator_node.enter_rcvd = True
-        elif msg["MSGTYPE"] == "ACK":
-            self.coordinator_node.ack_rcvd = True
-        elif msg["MSGTYPE"] == "EXIT":
-            self.coordinator_node.exit_rcvd = True
+        with self.coordinator_node:
+            if msg["MSGTYPE"] == "ENTER":
+                self.coordinator_node.enter_rcvd = True
+                self.coordinator_node.other_croad = msg['CROAD']
+            elif msg["MSGTYPE"] == "ACK":
+                self.coordinator_node.ack_rcvd = True
+            elif msg["MSGTYPE"] == "EXIT":
+                self.coordinator_node.exit_rcvd = True
 
 
 if __name__ == '__main__':
