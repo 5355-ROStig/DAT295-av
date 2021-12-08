@@ -1,8 +1,11 @@
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 import numpy as np
+from filter import Filter
 
-class KalmanFilterHelper:
+MEDIAN_SAMPLES = 3
+
+class Kalman(Filter):
     def __init__(self, initPos):
         # x is state (p_x, p_y, v_x, v_y)
         # z is measurement (p_x, p_y)
@@ -23,7 +26,7 @@ class KalmanFilterHelper:
         self.filter.R = np.eye(2) * 0.1
 
         # Process noise
-        self.filter.Q = Q_discrete_white_noise(dim=4, dt=0.2, var=0.13)
+        self.filter.Q = Q_discrete_white_noise(dim=4, dt=0.2, var=0.3)
 
 
     def newData(self, dt, pos):

@@ -6,7 +6,8 @@ import array
 import math
 from datetime import datetime, timedelta
 import collections
-from kalman import KalmanFilterHelper
+from kalman import Kalman
+from median import Median
 
 from gv_client.msg import GulliViewPosition
 
@@ -22,14 +23,14 @@ collision = False
 class Robot:
     def __init__(self, name, initPos):
         self.name = name
-        self.kalman = KalmanFilterHelper(initPos)
+        self.filter: Filter = Median(initPos, 4)
         self.v = np.array([0, 0]) # current velocity
         self.p = initPos # current position
         self.lastReceive = datetime.now()
 
     def receivePosition(self, p):
         dt = (datetime.now() - self.lastReceive).total_seconds()
-        res = self.kalman.newData(dt, p)
+        res = self.filter.newData(dt, p)
         self.p = np.array([res[0], res[1]])
         self.v = np.array([res[2], res[3]])
         if np.linalg.norm(self.v) < V_JITTER:
