@@ -1,19 +1,22 @@
 #!/bin/env python3
 import threading
+import typing
 from collections import namedtuple
-from typing import List, Optional, Callable
+from typing import Optional, Callable
 from socketserver import UDPServer, BaseRequestHandler
 import socket
 import json
 
 import rospy
-from geometry_msgs.msg import Twist
 
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
 from mapdata.msg import RoadSection
 from std_msgs.msg import Empty
 from coordination_strategies import COORDINATION_STRATEGIES
+
+if typing.TYPE_CHECKING:
+    from coordination.src.coordination_strategies.strategy import CoordinationStrategy
 
 Position = namedtuple('Position', ['x', 'y'])
 BROADCAST_IP = "192.168.1.255"
@@ -77,7 +80,7 @@ class CoordinationNode:
         self.destination_road = destinations[self.start_road.name]
         self.start_line = self._find_stopline(self.start_road)
         self.stop_line = self._find_stopline(self.destination_road)
-        self.strategy: CoordinationStrategy = COORDINATION_STRATEGIES[self.start_road.priority_sign]()
+        self.strategy: CoordinationStrategy = COORDINATION_STRATEGIES[self.start_road.priority_sign](self)
 
         priority_sign_names = {
             RoadSection.PRIORITY_ROAD: "Priority Road",
@@ -85,7 +88,6 @@ class CoordinationNode:
             RoadSection.STOP_SIGN: "Stop Sign",
             RoadSection.TRAFFIC_LIGHT: "Traffic light"
         }
-
 
     @staticmethod
     def _await(condition: Callable[[], bool], rate: int = 2, timeout: float = 10.0):
@@ -228,7 +230,6 @@ class CoordinationNode:
             s.sendto(data, (BROADCAST_IP, self.port))
             rate.sleep()
 
-
     def _receive_exit(self, _):
         rospy.loginfo("/exit received from mission planner")
         self.exit_topic_rcvd = True
@@ -245,6 +246,7 @@ class IntersectionPacketHandler(BaseRequestHandler):
             return
         
         # rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
+
         if msg["MSGTYPE"] == "ENTER":
             self.coordinator_node.enter_rcvd = True
         elif msg["MSGTYPE"] == "ACK":
