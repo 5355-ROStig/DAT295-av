@@ -19,11 +19,12 @@ V_JITTER = 0.01
 # Variables
 robots = {}
 collision = False
+filter_creator = lambda _ : _
 
 class Robot:
     def __init__(self, name, initPos):
         self.name = name
-        self.filter: Filter = Median(initPos, 4)
+        self.filter: Filter = filter_creator(initPos)
         self.v = np.array([0, 0]) # current velocity
         self.p = initPos # current position
         self.lastReceive = datetime.now()
@@ -118,6 +119,20 @@ def callback(pos):
 
 if __name__ == '__main__':
     rospy.init_node('ttc_listener', anonymous=True)
+
+    # Choose filtering method
+    filter_type = rospy.get_param('~filter', 'median')
+    median_samples = rospy.get_param('~median_samples', 4)
+
+    if filter_type == 'kalman':
+        filter_creator = lambda initPos : Kalman(initPos)
+    elif filter_type == 'median':
+        filter_creator = lambda initPos : Median(initPos, median_samples)
+    else:
+        sys.exit("Invalid filter type")
+    rospy.loginfo("Using " + filter_type + " filter ")
+
+    # Start subscriber
     rospy.Subscriber('gv_positions', GulliViewPosition, callback)
     rospy.spin()
     rospy.loginfo("Bye!")
