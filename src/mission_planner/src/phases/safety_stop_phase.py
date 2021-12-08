@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist
 from phases.phase import Phase
 
 
-class CoordinationPhase(Phase):
+class SafetyStop(Phase):
 
     def __init__(self, mission: "MissionPlannerNode"):
         super().__init__(mission)
@@ -13,7 +13,7 @@ class CoordinationPhase(Phase):
 
     @property
     def name(self):
-        return f"Coordination"
+        return f"Safety stop"
 
     def begin(self):
         if not self.condition():
