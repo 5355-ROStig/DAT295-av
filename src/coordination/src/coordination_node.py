@@ -34,8 +34,8 @@ class CoordinationNode:
         self.tag_id = rospy.get_param("/tag_id")
 
         # Flags for coordination stages
-        self._coordinator_lock = threading.Lock()
-        with self._coordinator_lock:
+        self.coordinator_lock = threading.Lock()
+        with self.coordinator_lock:
             self.enter_rcvd = False
             self.other_croad = None
             self.ack_rcvd = False
@@ -250,7 +250,7 @@ class IntersectionPacketHandler(BaseRequestHandler):
         
         # rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
 
-        with self.coordinator_node:
+        with self.coordinator_node.coordinator_lock:
             if msg["MSGTYPE"] == "ENTER":
                 self.coordinator_node.enter_rcvd = True
                 self.coordinator_node.other_croad = msg['CROAD']
