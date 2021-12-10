@@ -36,7 +36,13 @@ class GulliViewPacketHandler(BaseRequestHandler):
         msg_type = unpack_data(recv_buf, start=0)
         sub_type = unpack_data(recv_buf, start=4)
 
-        rospy.logdebug(f"Message type: {msg_type}, subtype: {sub_type}")
+        # Byte 8-12 is sequence number (unused)
+
+        t1 = unpack_data(recv_buf, start=12)
+        t2 = unpack_data(recv_buf, start=16)
+        timestamp = (t1 << 32) | t2
+
+        rospy.logdebug(f"Message type: {msg_type}, subtype: {sub_type}, timestamp: {timestamp}")
 
         if msg_type == 1 and sub_type == 2:
 
