@@ -6,7 +6,7 @@ This node provides a framework for defining and executing missions.
 For example, it can be used to implement missions for crossing four-way intersections with different priority signs.
 
 # Parameters
-The node takes the following parameters:
+The node takes the following global parameters:
 - `~scenario`: The name of the scenario for which a mission should be loaded
 
 # Topics
@@ -19,3 +19,10 @@ The node publishes the following topics:
 # Services
 The node requires the following services:
 - `intersection_data`: Provided by the `mapdata` node, this service provides details about the structure of the intersection (positions of roads, etc.)
+
+### Whiteboard sketches
+Communication on ROS topics with the coordination node
+![node communication](img/nodes.jpg)
+
+The different phases and an overview of what they do.
+![](img/planner.jpg)
