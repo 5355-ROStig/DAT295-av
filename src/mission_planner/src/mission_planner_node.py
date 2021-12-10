@@ -11,7 +11,7 @@ from mapdata.srv import GetIntersection
 from mapdata.msg import RoadSection
 
 from phases.approach_phase import ApproachPhase
-from phases.safety_stop_phase import SafetyStop
+from phases.stop_phase import StopAtIntersection
 from phases.crossing_phase import CrossingPhase
 from phases.leave_phase import LeavePhase
 from phases.phase import Phase
@@ -75,7 +75,7 @@ class MissionPlannerNode:
         rospy.loginfo("Generating mission phases")
         self.phases: List[Phase] = [
             ApproachPhase(mission=self),
-            SafetyStop(mission=self),
+            StopAtIntersection(mission=self),
             CrossingPhase(mission=self),
             LeavePhase(mission=self)
         ]
@@ -101,6 +101,7 @@ class MissionPlannerNode:
 
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         self.exit_pub = rospy.Publisher('exit', Empty, queue_size=1)
+        self.stopped_pub = rospy.Publisher('stopped', Empty, queue_size=1)
 
         self.execute_mission()
 

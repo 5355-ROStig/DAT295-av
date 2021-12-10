@@ -41,6 +41,7 @@ class CoordinationNode:
             self.ack_rcvd = False
             self.exit_rcvd = False
             self.exit_topic_rcvd = False  # /exit ros topic
+            self.stopped_topic_rcvd = False  # /stopped ros topic
 
         scenario_param = rospy.get_param('~scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
@@ -85,12 +86,8 @@ class CoordinationNode:
         self.stop_line = self._find_stopline(self.destination_road)
         self.strategy: CoordinationStrategy = COORDINATION_STRATEGIES[self.start_road.priority_sign](self)
 
-        priority_sign_names = {
-            RoadSection.PRIORITY_ROAD: "Priority Road",
-            RoadSection.GIVE_WAY: "Give Way",
-            RoadSection.STOP_SIGN: "Stop Sign",
-            RoadSection.TRAFFIC_LIGHT: "Traffic light"
-        }
+        rospy.Subscriber("stopped", Empty, self._receive_stopped)
+        rospy.Subscriber("exit", Empty, self._receive_exit)
 
     @staticmethod
     def _await(condition: Callable[[], bool], rate: int = 2, timeout: float = 10.0):
@@ -208,17 +205,15 @@ class CoordinationNode:
 
         rospy.loginfo("ACK received, resolving priority...")
 
-        if not self.strategy.has_priority():
-            while not self.exit_rcvd and not rospy.is_shutdown():
-                # ACK
-                data = bytes(json.dumps(ack_msg), "utf-8")
-                s.sendto(data, (BROADCAST_IP, self.port))
-                rate.sleep()
+        while not (self.strategy.has_priority() or self.exit_rcvd) and not rospy.is_shutdown():
+            # ACK
+            data = bytes(json.dumps(ack_msg), "utf-8")
+            s.sendto(data, (BROADCAST_IP, self.port))
+            rate.sleep()
 
         rospy.loginfo("Sending /go to mission planner")
         go_pub.publish(Empty())
 
-        rospy.Subscriber("exit", Empty, self._receive_exit)
         rospy.loginfo("Sending ACKs until mission planner says I've crossed")
         while not self.exit_topic_rcvd and not rospy.is_shutdown():
             # ACK
@@ -232,6 +227,10 @@ class CoordinationNode:
             data = bytes(json.dumps(exit_msg), "utf-8")
             s.sendto(data, (BROADCAST_IP, self.port))
             rate.sleep()
+
+    def _receive_stopped(self, _):
+        rospy.loginfo(f"/stopped received from mission planner ({self.stopped_topic_rcvd})")
+        self.stopped_topic_rcvd = True
 
     def _receive_exit(self, _):
         rospy.loginfo("/exit received from mission planner")
