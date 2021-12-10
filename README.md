@@ -10,6 +10,7 @@ working with two different subprojects using [wifibots](https://www.wifibot.com/
 * Tested on Python 3.8.10
 * ROS Noetic Ninjemys
   + Only tested on Ubuntu 20.04.3 LTS (Focal Fossa)
+* Our forked [roswifibot driver](https://github.com/5355-ROStig/roswifibot)
 * For intersection arbitration:
   + Our patched [GulliView](https://github.com/5355-ROStig/GulliView)
 
@@ -17,13 +18,17 @@ working with two different subprojects using [wifibots](https://www.wifibot.com/
 ## How to run
 I case any other students will work in the EG5355 lab in the future, here's how to run our projects.
 
-Clone this repository onto the wifibots:
+Clone this repository and the forked roswifibot driver onto the wifibots:
 ```bash
 # ask the TA/supervisor for passwords
 
 # Assuming the configuration of the roof-mounted Linksys router hasn't changed
 ssh wifitbot@192.168.1.102  # white antenna
 git clone git@github.com:5355-ROStig/DAT295-av.git
+
+# and the driver
+cd DAT295-av
+git clone git@github.com:5355-ROStig/roswifibot.git
 
 # repeat for 192.168.1.103 (black antenna)
 # and for 192.168.1.101 (lidar bot) if you want to run cruise control stuff
