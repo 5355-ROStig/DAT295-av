@@ -58,7 +58,7 @@ class MapData:
         self.map_pub.publish(self.map_data.get_occupancy_grid())
 
         # Scenario 
-        scenario = rospy.get_param("~scenario")
+        scenario = rospy.get_param("/scenario")
         self.intersection = self._four_way_intersection(scenario)
 
         rospy.loginfo(f"Starting service for intersection data")

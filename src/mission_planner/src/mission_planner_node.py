@@ -27,7 +27,7 @@ class MissionPlannerNode:
 
         self.pos: Optional[Position] = None
 
-        scenario_param = rospy.get_param('~scenario')
+        scenario_param = rospy.get_param('/scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
 
         rospy.Subscriber('gv_positions', GulliViewPosition, self._position_cb)
