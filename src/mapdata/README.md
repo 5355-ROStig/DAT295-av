@@ -11,3 +11,7 @@ Example start:
     rosrun mapdata map_data_node.py _map_name:="eg5355"
 
 Where eg5355 is the name of a folder in `./maps` that contains a config.yml file and a png of the map.
+
+### Whiteboard sketch
+How we modeled the intersection and message/service files:
+![intersection image](img/mapdata.jpg)

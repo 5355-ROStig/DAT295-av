@@ -11,3 +11,6 @@ Each map directory should contain the following data files:
  - `road_graph.xml`: A GraphML graph of the road network
  - `map_image.png`: A top-down perspective view of the map. Black pixels denote offroad/blocked, white pixels are the 
  road, etc. See the ROS wiki about occupancy grids as well.  
+
+## Measured points
+Note the direction. The windows in EG5355 is what we call east.
