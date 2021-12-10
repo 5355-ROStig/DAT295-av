@@ -4,6 +4,7 @@ from socketserver import BaseRequestHandler, UDPServer
 import struct
 
 import rospy
+from std_msgs.msg import Header
 
 from gv_client.msg import GulliViewPosition
 
@@ -40,7 +41,7 @@ class GulliViewPacketHandler(BaseRequestHandler):
 
         t1 = unpack_data(recv_buf, start=12)
         t2 = unpack_data(recv_buf, start=16)
-        timestamp = (t1 << 32) | t2
+        timestamp = ((t1 << 32) | t2) / 1000
 
         rospy.logdebug(f"Message type: {msg_type}, subtype: {sub_type}, timestamp: {timestamp}")
 
@@ -76,7 +77,9 @@ class GulliViewPacketHandler(BaseRequestHandler):
                 # Camera capturing the tag
                 c = unpack_data(recv_buf, start=base + 12)
 
-                msg = GulliViewPosition(x=x, y=y, tagId=tag_id, cameraId=c)
+                header = Header()
+                header.stamp = rospy.Time.from_sec(timestamp)
+                msg = GulliViewPosition(header=header, x=x, y=y, tagId=tag_id, cameraId=c)
 
                 self.publisher.publish(msg)
 
