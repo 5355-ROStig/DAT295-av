@@ -2,6 +2,9 @@
 
 <env name="ROSCONSOLE_FORMAT" value="[${severity}] [${time}] [${node}]: ${message}" />
 
+<!-- Scenario doesn't matter for the visualization but the mapdata node needs it -->
+<param name="scenario" type="str" value="scenario1" />
+
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(find visualization)/launch/config.rviz" output="screen" />
 
 <!-- Start a gulliview_client with default parameters (port=2121, tags=all) -->

@@ -7,17 +7,17 @@ from visualization_msgs.msg import Marker
 from gv_client.msg import GulliViewPosition
 from zone_marker import ZoneMarker
 
-class Visualizer():
+
+class Visualizer:
     def __init__(self):
         rospy.init_node('visualizer')
 
         # Create markers for each wifibot
         self.bot_markers = {
-            # 4: self.init_marker(4),
+            4: self.init_marker(4),
             5: self.init_marker(5),
             6: self.init_marker(6)
         }
-
 
         rospy.loginfo(f"Visualizer started, looking for tags: {list(self.bot_markers.keys())}")
 
@@ -25,12 +25,8 @@ class Visualizer():
 
         rospy.Subscriber("/gv_positions", GulliViewPosition, self.bot_state_handler)
 
-        zone_pub = rospy.Publisher('zone_marker', Marker, queue_size=1, latch=True)
-        # Show critical section in a nice pink color
-        section_marker = ZoneMarker(zone_id = 0, zone_type = 'critical_section',
-                                    origin = (1795, 6106), width = 800,
-                                    height = 800, color = (255, 85, 127), y_mirroring = 0)
-        zone_pub.publish(section_marker.marker)
+        # Uncomment to show a zone marker at intersection
+        # self.add_zone_marker(1795, 6106)
 
     def bot_state_handler(self, gv_position):
         tag_id = gv_position.tagId
@@ -58,9 +54,18 @@ class Visualizer():
         self.marker_pub.publish(self.bot_markers[tag_id])
         tf2_ros.TransformBroadcaster().sendTransform(t)
 
+    @staticmethod
+    def add_zone_marker(x, y):
+        zone_pub = rospy.Publisher('zone_marker', Marker, queue_size=1, latch=True)
 
+        # Show critical section
+        section_marker = ZoneMarker(zone_id=0, zone_type='critical_section',
+                                    origin=(x, y), width=800,
+                                    height=800, color=(255, 85, 127), y_mirroring=0)
+        zone_pub.publish(section_marker.marker)
 
-    def init_marker(self, bot_id):
+    @staticmethod
+    def init_marker(bot_id):
         m = Marker()
 
         # ns+id and frame_id needs to be unique
@@ -69,13 +74,15 @@ class Visualizer():
         m.id = bot_id
 
         m.header.stamp = rospy.Time(0)
-        m.type = Marker.CUBE
+        # Visualize bots as cylinders because that's how we look for
+        # collisions in the ttc package.
+        m.type = Marker.CYLINDER
         m.action = Marker.ADD
 
-        # Position is always at origin of the bot's frame
+        # Position is always at origin of the bots frame
         m.pose.position.x = 0
         m.pose.position.y = 0
-        m.pose.position.z = 100  # Place above map
+        m.pose.position.z = 150  # Place above map to avoid z-fighting
 
         # Orientation is always identity
         m.pose.orientation.x = 0
@@ -84,9 +91,9 @@ class Visualizer():
         m.pose.orientation.w = 1
 
         # Size of marker
-        m.scale.x = 200
-        m.scale.y = 200
-        m.scale.z = 200
+        m.scale.x = 250 * 2
+        m.scale.y = 250 * 2
+        m.scale.z = 100
 
         # RGBA colors
         m.color.r = 1.0
