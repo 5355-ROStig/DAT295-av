@@ -22,8 +22,10 @@ class ExperimentControlPacketHandler(BaseRequestHandler):
 
     def handle(self):
         msg = json.loads(self.request[0])
+        rospy.loginfo(f"Handling received controller message: {msg}")
 
         if msg['type'] == 'START':
+            rospy.loginfo("Received experiment start message")
             self.start_publisher.publish(Empty())
 
 
