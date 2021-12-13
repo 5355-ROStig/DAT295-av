@@ -9,6 +9,7 @@ from std_msgs.msg import Empty
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
 from mapdata.msg import RoadSection
+from missions import MISSIONS
 
 from phases.approach_phase import ApproachPhase
 from phases.stop_phase import StopAtIntersection
@@ -73,12 +74,7 @@ class MissionPlannerNode:
         self.stop_line = self._find_stopline(self.destination_road)
 
         rospy.loginfo("Generating mission phases")
-        self.phases: List[Phase] = [
-            ApproachPhase(mission=self),
-            StopAtIntersection(mission=self),
-            CrossingPhase(mission=self),
-            LeavePhase(mission=self)
-        ]
+        self.phases: List[Phase] = [p(mission=self) for p in MISSIONS[scenario_param]]
 
         priority_sign_names = {
             RoadSection.PRIORITY_ROAD: "Priority Road",
