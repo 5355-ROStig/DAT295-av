@@ -25,8 +25,6 @@ class MissionPlannerNode:
         rospy.init_node('mission_planner_node', anonymous=True)
         rospy.loginfo("Starting mission planner node")
 
-        self.started = False
-        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
         self.pos: Optional[Position] = None
 
         scenario_param = rospy.get_param('/scenario')
@@ -105,6 +103,8 @@ class MissionPlannerNode:
         self.exit_pub = rospy.Publisher('exit', Empty, queue_size=1)
         self.stopped_pub = rospy.Publisher('stopped', Empty, queue_size=1)
 
+        self.started = False
+        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
         try:
             rospy.loginfo("Awaiting start command from experiment controller")
             self._await(self._start_received, timeout=30.0)
