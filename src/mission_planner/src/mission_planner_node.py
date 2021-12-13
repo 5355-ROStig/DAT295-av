@@ -112,6 +112,8 @@ class MissionPlannerNode:
             rospy.logerr("Timeout while waiting for start command")
             raise e
 
+        rospy.loginfo("Starting mission...")
+
         self.execute_mission()
 
     @staticmethod
