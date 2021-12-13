@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rospy
+from genpy.rostime import *
 
 import numpy as np
 import array
@@ -8,6 +9,7 @@ from datetime import datetime, timedelta
 import collections
 from kalman import Kalman
 from median import Median
+from split_median import SplitMedian
 
 from gv_client.msg import GulliViewPosition
 
@@ -22,21 +24,21 @@ collision = False
 filter_creator = lambda _ : _
 
 class Robot:
-    def __init__(self, name, initPos):
+    def __init__(self, name, initPos, initTime):
         self.name = name
         self.filter: Filter = filter_creator(initPos)
         self.v = np.array([0, 0]) # current velocity
         self.p = initPos # current position
-        self.lastReceive = datetime.now()
+        self.lastReceive = initTime
 
-    def receivePosition(self, p):
-        dt = (datetime.now() - self.lastReceive).total_seconds()
+    def receivePosition(self, p, timestamp):
+        dt = (timestamp - self.lastReceive).to_sec()
         res = self.filter.newData(dt, p)
         self.p = np.array([res[0], res[1]])
         self.v = np.array([res[2], res[3]])
         if np.linalg.norm(self.v) < V_JITTER:
             self.v = np.array([0., 0.])
-        self.lastReceive = datetime.now()
+        self.lastReceive = timestamp
 
     # Check for collision against all other robots
     def collisionCheck(self):
@@ -98,23 +100,25 @@ def ttc(r1, r2):
         # Imaginary answer, no collision
         return float("inf")
 
-def callback(pos):
+def callback(gvPos):
+    time = gvPos.header.stamp
+
     # Remove old robot positions
-    delete = [k for k, v in robots.items() if v.lastReceive + timedelta(seconds=TIMEOUT_SEC) < datetime.now()]
+    delete = [k for k, v in robots.items() if v.lastReceive + Duration(TIMEOUT_SEC) < time]
     for k in delete:
         print("Robot", k, "is gone")
         del robots[k]
 
     # New position
-    p = np.array([pos.x/1000, pos.y/1000]) # Convert from mm to m
-    robot = robots.get(pos.tagId)
+    p = np.array([gvPos.x/1000, gvPos.y/1000]) # Convert from mm to m
+    robot = robots.get(gvPos.tagId)
 
     if robot is None:
         # Add new robot
-        robot = Robot(pos.tagId, p)
-        robots[pos.tagId] = robot
+        robot = Robot(gvPos.tagId, p, time)
+        robots[gvPos.tagId] = robot
     else:
-        robot.receivePosition(p)
+        robot.receivePosition(p, time)
         robot.collisionCheck()
 
 if __name__ == '__main__':
@@ -128,6 +132,8 @@ if __name__ == '__main__':
         filter_creator = lambda initPos : Kalman(initPos)
     elif filter_type == 'median':
         filter_creator = lambda initPos : Median(initPos, median_samples)
+    elif filter_type == 'split_median':
+        filter_creator = lambda initPos : SplitMedian(initPos, median_samples)
     else:
         sys.exit("Invalid filter type")
     rospy.loginfo("Using " + filter_type + " filter ")

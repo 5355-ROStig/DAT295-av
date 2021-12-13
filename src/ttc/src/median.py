@@ -19,7 +19,7 @@ class Median(Filter):
 
         velocities = []
 
-        for p1, p2 in zip(self.buf, self.buf[1:]):
+        for p1, p2 in zip(self.buf, list(self.buf)[1:]):
             displacement = p2[1] - p1[1]
             time_delta = p2[0]
             vel = displacement / time_delta
@@ -46,7 +46,6 @@ class Median(Filter):
     def newData(self, dt, pos):
         # State transition matrix
         self.buf.append((dt, pos))
-        self._updateVel()
 
-        return np.array([pos[0], pos[1], self.v[0], self.v[1]])
+        return self._updateVel()
 
