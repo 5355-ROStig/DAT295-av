@@ -28,7 +28,6 @@ class ApproachPhase(Phase):
         pass
 
     def run(self):
-        print(self.mission.pos.y, self.target_line)
         twist = Twist()
         twist.linear.x = 0.35
         twist.linear.y = 0
