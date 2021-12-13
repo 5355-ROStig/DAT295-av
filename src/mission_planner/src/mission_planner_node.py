@@ -25,6 +25,8 @@ class MissionPlannerNode:
         rospy.init_node('mission_planner_node', anonymous=True)
         rospy.loginfo("Starting mission planner node")
 
+        self.started = False
+        rospy.Subscriber('/experiment_start', GulliViewPosition, self._start_cb)
         self.pos: Optional[Position] = None
 
         scenario_param = rospy.get_param('/scenario')
@@ -103,6 +105,13 @@ class MissionPlannerNode:
         self.exit_pub = rospy.Publisher('exit', Empty, queue_size=1)
         self.stopped_pub = rospy.Publisher('stopped', Empty, queue_size=1)
 
+        try:
+            rospy.loginfo("Awaiting start command from experiment controller")
+            self._await(self._start_received, timeout=30.0)
+        except TimeoutError as e:
+            rospy.logerr("Timeout while waiting for start command")
+            raise e
+
         self.execute_mission()
 
     @staticmethod
@@ -131,6 +140,12 @@ class MissionPlannerNode:
 
     def _position_cb(self, position_msg):
         self.pos = Position(position_msg.x, position_msg.y)
+
+    def _start_received(self) -> bool:
+        return self.started is True
+
+    def _start_cb(self, _):
+        self.started = True
 
     def _receive_go(self, _):
         rospy.loginfo("Received go!")
