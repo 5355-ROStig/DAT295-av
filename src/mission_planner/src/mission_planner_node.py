@@ -26,7 +26,7 @@ class MissionPlannerNode:
         rospy.loginfo("Starting mission planner node")
 
         self.started = False
-        rospy.Subscriber('/experiment_start', GulliViewPosition, self._start_cb)
+        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
         self.pos: Optional[Position] = None
 
         scenario_param = rospy.get_param('/scenario')
