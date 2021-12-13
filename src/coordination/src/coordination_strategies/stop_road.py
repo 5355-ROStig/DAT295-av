@@ -18,10 +18,10 @@ class StopRoad(CoordinationStrategy):
             assert self.coordinator.start_road is not None
             assert self.coordinator.other_croad is not None
 
-            rospy.loginfo(f"[stopsign] my road: {self.coordinator.start_road.name}, other guy: {self.coordinator.other_croad}")
-            rospy.loginfo(f"[stopsign] Do I have prio? "
+            rospy.logdebug(f"[stopsign] my road: {self.coordinator.start_road.name}, other guy: {self.coordinator.other_croad}")
+            rospy.logdebug(f"[stopsign] Do I have prio? "
                           f"{self._is_to_the_right(me=self.coordinator.start_road.name, other=self.coordinator.other_croad)}")
-            rospy.loginfo(f"[stopsign] Have I stopped yet? {self.coordinator.stopped_topic_rcvd}")
+            rospy.logdebug(f"[stopsign] Have I stopped yet? {self.coordinator.stopped_topic_rcvd}")
 
             return self._is_to_the_right(me=self.coordinator.start_road.name,
                                          other=self.coordinator.other_croad) \

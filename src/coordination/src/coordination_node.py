@@ -229,7 +229,7 @@ class CoordinationNode:
             rate.sleep()
 
     def _receive_stopped(self, _):
-        rospy.loginfo(f"/stopped received from mission planner ({self.stopped_topic_rcvd})")
+        rospy.logdebug(f"/stopped received from mission planner ({self.stopped_topic_rcvd})")
         self.stopped_topic_rcvd = True
 
     def _receive_exit(self, _):
