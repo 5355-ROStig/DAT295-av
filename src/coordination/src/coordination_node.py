@@ -89,6 +89,17 @@ class CoordinationNode:
         rospy.Subscriber("stopped", Empty, self._receive_stopped)
         rospy.Subscriber("exit", Empty, self._receive_exit)
 
+        self.started = False
+        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
+        try:
+            rospy.loginfo("Awaiting start command from experiment controller")
+            self._await(self._start_received, timeout=30.0)
+        except TimeoutError as e:
+            rospy.logerr("Timeout while waiting for start command")
+            raise e
+
+        rospy.loginfo("Starting coordination protocol...")
+
     @staticmethod
     def _await(condition: Callable[[], bool], rate: int = 2, timeout: float = 10.0):
         """Block until a given condition is True.
@@ -115,6 +126,12 @@ class CoordinationNode:
 
     def _position_cb(self, position_msg):
         self.pos = Position(position_msg.x, position_msg.y)
+
+    def _start_received(self) -> bool:
+        return self.started is True
+
+    def _start_cb(self, _):
+        self.started = True
 
     def _determine_starting_road(self):
         for road_section in (self.road_data.north, self.road_data.south, self.road_data.east, self.road_data.west):
