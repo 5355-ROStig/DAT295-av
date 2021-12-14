@@ -11,7 +11,6 @@ import rospy
 
 from gv_client.msg import GulliViewPosition
 from mapdata.srv import GetIntersection
-from mapdata.msg import RoadSection
 from std_msgs.msg import Empty
 from coordination_strategies import COORDINATION_STRATEGIES
 
@@ -42,8 +41,10 @@ class CoordinationNode:
             self.exit_rcvd = False
             self.exit_topic_rcvd = False  # /exit ros topic
             self.stopped_topic_rcvd = False  # /stopped ros topic
+            self.sched_rcvd = False  # scheduling message from traffic light
+            self.schedule = []  # which car goes first according to the traffic light?
 
-        rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
+        rospy.loginfo(f"Loading mission for requested scenario '{rospy.get_param('/scenario')}'")
 
         rospy.Subscriber('gv_positions', GulliViewPosition, self._position_cb)
 
@@ -105,6 +106,12 @@ class CoordinationNode:
         self.enter_msg = {"UID": self.tag_id, "MSGTYPE": "ENTER", "CROAD": self.start_road.name}
         self.ack_msg = {"UID": self.tag_id, "MSGTYPE": "ACK"}
         self.exit_msg = {"UID": self.tag_id, "MSGTYPE": "EXIT"}
+
+        # Rate for sleeps zZz
+        self.rate = rospy.Rate(10)  # Hz
+
+        # Used for telling mission planner when car should cross
+        self.go_pub = rospy.Publisher("/go", Empty, queue_size=1)
 
         rospy.loginfo("Starting coordination protocol...")
 
@@ -188,18 +195,59 @@ class CoordinationNode:
         """
         Executes the vehicle side of the vehicle to infrastructure protocol.
         """
-        raise NotImplementedError("V2I stuff not yet implemented")
+        rospy.loginfo("Waiting for SCHED, spamming ENTER...")
+        self.broadcast_msg(self.enter_msg)
+        while not self.sched_rcvd and not rospy.is_shutdown():
+            self.broadcast_msg(self.enter_msg)
+            self.rate.sleep()
+
+        self.broadcast_msg(self.ack_msg)
+
+        has_prio = False
+        if self.schedule:
+            has_prio = self.schedule[0] == self.tag_id
+
+        rospy.loginfo(f"First sched message received: {self.schedule}, has_prio: {has_prio}")
+
+        # Check priority
+        while not has_prio and not rospy.is_shutdown():
+            # Wait for new schedules
+            self.sched_rcvd = False
+
+            rospy.loginfo("Waiting for next SCHED, spamming ACK...")
+            while not self.sched_rcvd and not rospy.is_shutdown():
+                self.broadcast_msg(self.ack_msg)
+                self.rate.sleep()
+
+            has_prio = False
+            if self.schedule:
+                has_prio = self.schedule[0] == self.tag_id
+
+            self.rate.sleep()
+
+        rospy.loginfo("Sending /go to mission planner")
+        self.go_pub.publish(Empty())
+
+        rospy.loginfo("Spamming ACKs until mission planner says I've crossed")
+        while not self.exit_topic_rcvd and not rospy.is_shutdown():
+            self.broadcast_msg(self.ack_msg)
+            self.rate.sleep()
+
+        rospy.loginfo("Waiting for ACK from traffic light, spamming ACK")
+        self.broadcast_msg(self.exit_msg)
+        while not self.ack_rcvd and not rospy.is_shutdown():
+            self.broadcast_msg(self.ack_msg)
+            self.broadcast_msg(self.exit_msg)
+            self.rate.sleep()
+
+        rospy.loginfo("Protocol finished. Bye!")
 
     def execute_protocol(self):
-        # Init the publisher here so subscribers have enough time to register it (?)
-        go_pub = rospy.Publisher("/go", Empty, queue_size=1)
-
-        rate = rospy.Rate(10)  # 10 Hz
 
         rospy.loginfo("Waiting for ENTER...")
         while not self.enter_rcvd and not rospy.is_shutdown():
             self.broadcast_msg(self.enter_msg)
-            rate.sleep()
+            self.rate.sleep()
 
         rospy.loginfo("ENTER received, waiting for ACK...")
 
@@ -208,26 +256,26 @@ class CoordinationNode:
             # We still send ENTERs in case the other bot is still waiting for ours
             self.broadcast_msg(self.enter_msg)
             self.broadcast_msg(self.ack_msg)
-            rate.sleep()
+            self.rate.sleep()
 
         rospy.loginfo("ACK received, resolving priority...")
 
         while not (self.strategy.has_priority() or self.exit_rcvd) and not rospy.is_shutdown():
             self.broadcast_msg(self.ack_msg)
-            rate.sleep()
+            self.rate.sleep()
 
         rospy.loginfo("Sending /go to mission planner")
-        go_pub.publish(Empty())
+        self.go_pub.publish(Empty())
 
         rospy.loginfo("Sending ACKs until mission planner says I've crossed")
         while not self.exit_topic_rcvd and not rospy.is_shutdown():
             self.broadcast_msg(self.ack_msg)
-            rate.sleep()
+            self.rate.sleep()
 
         rospy.loginfo("Spamming EXIT for all eternity :)")
         while not rospy.is_shutdown():
             self.broadcast_msg(self.exit_msg)
-            rate.sleep()
+            self.rate.sleep()
 
     def _receive_stopped(self, _):
         rospy.logdebug(f"/stopped received from mission planner ({self.stopped_topic_rcvd})")
@@ -258,6 +306,9 @@ class IntersectionPacketHandler(BaseRequestHandler):
                 self.coordinator_node.ack_rcvd = True
             elif msg["MSGTYPE"] == "EXIT":
                 self.coordinator_node.exit_rcvd = True
+            elif msg["MSGTYPE"] == "SCHED":
+                self.coordinator_node.sched_rcvd = True
+                self.coordinator_node.schedule = msg["SCHED_LIST"]
 
 
 if __name__ == '__main__':
@@ -270,18 +321,19 @@ if __name__ == '__main__':
 
     rospy.loginfo(f"Starting UDP server on {host}:{port}")
     with UDPServer((host, port), IntersectionPacketHandler) as server:
+        # Start new thread for UDP server
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.start()
 
         # Begin executing protocol
-        # V2V is significantly different from V2I so we separate their logic here
+        # V2V is significantly different from V2I (traffic light) so we separate their logic here
         scenario_param = rospy.get_param('/scenario')
         if scenario_param == 'scenario3':
             coordination_node.execute_v2i_protocol()
         elif scenario_param in ['scenario1', 'scenario2']:
             coordination_node.execute_protocol()
         else:
-            raise NotImplementedError('Uknown scenario.')
+            raise NotImplementedError('Unknown scenario.')
 
         # Shut down server when node shuts down
         rospy.loginfo("Node received shutdown signal, shutting down server")
