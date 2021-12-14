@@ -43,7 +43,6 @@ class CoordinationNode:
             self.exit_topic_rcvd = False  # /exit ros topic
             self.stopped_topic_rcvd = False  # /stopped ros topic
 
-        scenario_param = rospy.get_param('/scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
 
         rospy.Subscriber('gv_positions', GulliViewPosition, self._position_cb)
@@ -97,6 +96,15 @@ class CoordinationNode:
         except TimeoutError as e:
             rospy.logerr("Timeout while waiting for start command")
             raise e
+
+        # Socket for sending V2V/V2I packages
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+        # Message types
+        self.enter_msg = {"UID": self.tag_id, "MSGTYPE": "ENTER", "CROAD": self.start_road.name}
+        self.ack_msg = {"UID": self.tag_id, "MSGTYPE": "ACK"}
+        self.exit_msg = {"UID": self.tag_id, "MSGTYPE": "EXIT"}
 
         rospy.loginfo("Starting coordination protocol...")
 
@@ -172,60 +180,40 @@ class CoordinationNode:
         elif road_section.name == 'W':
             return min(road_section.left.x, road_section.right.x) - road_section.stopline_offset
 
+    def broadcast_msg(self, msg):
+        data = bytes(json.dumps(msg), "utf-8")
+        self.sock.sendto(data, (BROADCAST_IP, self.port))
+
+    def execute_v2i_protocol(self):
+        """
+        Executes the vehicle side of the vehicle to infrastructure protocol.
+        """
+        raise NotImplementedError("V2I stuff not yet implemented")
+
     def execute_protocol(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         # Init the publisher here so subscribers have enough time to register it (?)
         go_pub = rospy.Publisher("/go", Empty, queue_size=1)
 
-        enter_msg = {
-            "UID": self.tag_id,
-            "MSGTYPE": "ENTER",
-            "CROAD": self.start_road.name  # CROAD=current road
-        }
-
-        ack_msg = {
-            "UID": self.tag_id,
-            "MSGTYPE": "ACK"
-        }
-
-        exit_msg = {
-            "UID": self.tag_id,
-            "MSGTYPE": "EXIT"
-        }
-
         rate = rospy.Rate(10)  # 10 Hz
-        
+
         rospy.loginfo("Waiting for ENTER...")
         while not self.enter_rcvd and not rospy.is_shutdown():
-            # Send data as json
-            data = bytes(json.dumps(enter_msg), "utf-8")
-
-            s.sendto(data, (BROADCAST_IP, self.port))
+            self.broadcast_msg(self.enter_msg)
             rate.sleep()
 
         rospy.loginfo("ENTER received, waiting for ACK...")
 
-        # ACK
-        data = bytes(json.dumps(ack_msg), "utf-8")
-        s.sendto(data, (BROADCAST_IP, self.port))
+        self.broadcast_msg(self.ack_msg)
         while not self.ack_rcvd and not rospy.is_shutdown():
-            # We still send ENTER in case the other bot is still waiting for ours
-            data = bytes(json.dumps(enter_msg), "utf-8")
-            s.sendto(data, (BROADCAST_IP, self.port))
-
-            # ACK
-            data = bytes(json.dumps(ack_msg), "utf-8")
-            s.sendto(data, (BROADCAST_IP, self.port))
-
+            # We still send ENTERs in case the other bot is still waiting for ours
+            self.broadcast_msg(self.enter_msg)
+            self.broadcast_msg(self.ack_msg)
             rate.sleep()
 
         rospy.loginfo("ACK received, resolving priority...")
 
         while not (self.strategy.has_priority() or self.exit_rcvd) and not rospy.is_shutdown():
-            # ACK
-            data = bytes(json.dumps(ack_msg), "utf-8")
-            s.sendto(data, (BROADCAST_IP, self.port))
+            self.broadcast_msg(self.ack_msg)
             rate.sleep()
 
         rospy.loginfo("Sending /go to mission planner")
@@ -233,16 +221,12 @@ class CoordinationNode:
 
         rospy.loginfo("Sending ACKs until mission planner says I've crossed")
         while not self.exit_topic_rcvd and not rospy.is_shutdown():
-            # ACK
-            data = bytes(json.dumps(ack_msg), "utf-8")
-            s.sendto(data, (BROADCAST_IP, self.port))
+            self.broadcast_msg(self.ack_msg)
             rate.sleep()
 
         rospy.loginfo("Spamming EXIT for all eternity :)")
         while not rospy.is_shutdown():
-            # EXIT
-            data = bytes(json.dumps(exit_msg), "utf-8")
-            s.sendto(data, (BROADCAST_IP, self.port))
+            self.broadcast_msg(self.exit_msg)
             rate.sleep()
 
     def _receive_stopped(self, _):
@@ -259,11 +243,11 @@ class IntersectionPacketHandler(BaseRequestHandler):
 
     def handle(self):
         msg = json.loads(self.request[0])
-        
-        if msg['UID'] == self.coordinator_node.tag_id:  
+
+        if msg['UID'] == self.coordinator_node.tag_id:
             # Ignore our own broadcasts
             return
-        
+
         # rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
 
         with self.coordinator_node.coordinator_lock:
@@ -290,7 +274,14 @@ if __name__ == '__main__':
         server_thread.start()
 
         # Begin executing protocol
-        coordination_node.execute_protocol()
+        # V2V is significantly different from V2I so we separate their logic here
+        scenario_param = rospy.get_param('/scenario')
+        if scenario_param == 'scenario3':
+            coordination_node.execute_v2i_protocol()
+        elif scenario_param in ['scenario1', 'scenario2']:
+            coordination_node.execute_protocol()
+        else:
+            raise NotImplementedError('Uknown scenario.')
 
         # Shut down server when node shuts down
         rospy.loginfo("Node received shutdown signal, shutting down server")
