@@ -61,7 +61,7 @@ class Robot:
         if n == 0:
             print("Nothing to collide with. v=", np.linalg.norm(self.v))
         elif t > 0:
-            print("Collision in ", t, " seconds. v=", np.linalg.norm(self.v))
+            print(self.name, "Collision in ", t, " seconds. v=", np.linalg.norm(self.v))
         else:
             if not collision:
                 print("Collision detected!")
