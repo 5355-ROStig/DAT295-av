@@ -11,10 +11,6 @@ from mapdata.srv import GetIntersection
 from mapdata.msg import RoadSection
 from missions import MISSIONS
 
-from phases.approach_phase import ApproachPhase
-from phases.stop_phase import StopAtIntersection
-from phases.crossing_phase import CrossingPhase
-from phases.leave_phase import LeavePhase
 from phases.phase import Phase
 
 
