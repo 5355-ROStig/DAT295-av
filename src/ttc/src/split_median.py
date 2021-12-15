@@ -19,6 +19,8 @@ class SplitMedian(Filter):
         return np.mean(list(map(lambda x: x[1], list(self.buf)[startIdx:endIdx])), axis=0)
 
     def _updateVel(self):
+        if len(self.buf) != self.buf.maxlen:
+            return *self.buf[-1][1], *[0, 0]
         p1 = self._getMedianPos(0, self.buf.maxlen//2 - 1)
         p2 = self._getMedianPos(self.buf.maxlen//2, self.buf.maxlen-1)
 

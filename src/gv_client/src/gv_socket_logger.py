@@ -78,7 +78,7 @@ class GulliViewPacketHandler(BaseRequestHandler):
                 # Camera capturing the tag
                 c = unpack_data(recv_buf, start=base + 12)
 
-                self.csv_writer.writerow([timestamp, tag_id, c, x, y])
+                self.csv_writer.writerow([timestamp, tag_id, c, x/1000, y/1000])
 
 
 if __name__ == "__main__":
