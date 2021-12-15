@@ -2,6 +2,7 @@
 <arg name="robot" />
 <arg name="tag_id" />
 <arg name="scenario" />
+<arg name="speed" default="0.35"/>
 
 <env name="ROSCONSOLE_FORMAT" value="[${severity}] [${time}] [${node}]: ${message}" />
 <param name="tag_id" type="int" value="$(arg tag_id)" />
@@ -21,7 +22,8 @@
   <node name="mapdata_server" pkg="mapdata" type="map_data_node.py"
         args="_map_name:='eg5355'"
         output="screen" />
-  <node name="mission_planner" pkg="mission_planner" type="mission_planner_node.py" output="screen" />
+  <node name="mission_planner" pkg="mission_planner" type="mission_planner_node.py" output="screen"
+        args="_speed:=$(arg speed)"/>
   <node name="coordination" pkg="coordination" type="coordination_node.py" output="screen" />
   <node name="controller_client" pkg="intercrossing_master" type="controller_client.py" output="screen" />
   <node name="teleop_joy" pkg="roswifibot" type="wifibot_teleop_joy.py" />

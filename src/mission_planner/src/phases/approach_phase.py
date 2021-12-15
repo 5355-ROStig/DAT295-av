@@ -29,7 +29,7 @@ class ApproachPhase(Phase):
 
     def run(self):
         twist = Twist()
-        twist.linear.x = 0.35
+        twist.linear.x = self.mission.drive_speed
         twist.linear.y = 0
         twist.linear.z = 0
         twist.angular.x = 0

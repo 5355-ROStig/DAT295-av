@@ -27,6 +27,9 @@ class MissionPlannerNode:
         scenario_param = rospy.get_param('/scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
 
+        self.drive_speed = rospy.get_param('~speed')
+        rospy.loginfo(f"Set drive speed to {self.drive_speed} m/s")
+
         rospy.Subscriber('gv_positions', GulliViewPosition, self._position_cb)
 
         self.go = False
