@@ -106,6 +106,24 @@ class ControllerPacketHandler(BaseRequestHandler):
             self.start_event.set()
 
 
+class IntersectionPacketHandler(BaseRequestHandler):
+    start_event: threading.Event = None
+
+    def handle(self):
+        msg = json.loads(self.request[0])
+        # print(f"Received packet: {msg} of type {msg['MSGTYPE']}")
+
+        if not self.start_event.is_set():
+            return
+
+        if msg["MSGTYPE"] == "ENTER":
+            # Stop logging
+            self.start_event.clear()
+            print("Received coordination ENTER, stopping logging")
+
+            # TODO: rotate log file for next run
+
+
 def run_server(server: UDPServer):
     thread_name = threading.current_thread().name
     server_address = ':'.join(map(str, server.server_address))
@@ -118,7 +136,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("gv_logger")
 
     parser.add_argument("-a", "--addr", help="The IP address to bind to", type=str, default="0.0.0.0")
-    parser.add_argument("-p", "--port", help="The port to bind to", type=int, default=2121)
+    parser.add_argument("-p", "--port", help="The position data port to bind to", type=int, default=2121)
+    parser.add_argument("-c", "--coordport", help="The coordination message port to bind to", type=int, default=2323)
     parser.add_argument("-c", "--controlport", help="The control message port to bind to", type=int, default=2424)
     parser.add_argument("-t", "--tag", help="Tag ID to filter by", default="all")
     parser.add_argument("-f", "--file", help="Filename to save to", default="gv.csv")
@@ -134,12 +153,17 @@ if __name__ == "__main__":
     control_server = UDPServer((args.addr, args.controlport), ControllerPacketHandler)
     control_thread = threading.Thread(target=run_server, name='control', args=[control_server])
 
+    print("Setting up coordination packet handler")
+    IntersectionPacketHandler.start_event = start_logging_event
+    coordination_server = UDPServer((args.addr, args.coordport), IntersectionPacketHandler)
+    coordination_thread = threading.Thread(target=run_server, name='coordination', args=[coordination_server])
+
     print(f"Setting up datalogger, logging to {args.file}, filtering for tag: {args.tag}")
     csvfile = open(args.file, "w", newline='')
     GulliViewPacketHandler.start_event = start_logging_event
     GulliViewPacketHandler.listen_tag_id = args.tag
     GulliViewPacketHandler.csv_writer = csv.writer(csvfile, dialect='excel')
-    GulliViewPacketHandler.csv_writer.writerow(["time", "tag", "camera", "x", "y"]) # Write header
+    GulliViewPacketHandler.csv_writer.writerow(["time", "tag", "camera", "x", "y"])  # Write header
 
     logging_server = UDPServer((args.addr, args.port), GulliViewPacketHandler)
     logging_thread = threading.Thread(target=run_server, name='logging', args=[logging_server])
@@ -159,6 +183,9 @@ if __name__ == "__main__":
 
         control_server.shutdown()
         print("Control server shutdown")
+
+        coordination_server.shutdown()
+        print("Coordination server shutdown")
 
         csvfile.close()
         print("Logfile closed")
