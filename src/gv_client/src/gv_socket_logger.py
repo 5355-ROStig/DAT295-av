@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-import threading
-from socketserver import BaseRequestHandler, UDPServer
-import struct
-import signal
-import logging
 import argparse
 import csv
+import json
+import logging
+import signal
+import struct
+import threading
+from socketserver import BaseRequestHandler, UDPServer
+from typing import Union
 
-shutdown = False
+
+class Shutdown(Exception):
+    """Raise to signal shutdown"""
+    pass
+
 
 def _sigterm_handler(_signo, _stack_frame):
-    global shutdown
-    shutdown = True
+    raise Shutdown
+
 
 def unpack_data(buf: bytearray, start: int) -> int:
     """Helper method to unpack big-endian uint32's from a buffer."""
@@ -26,13 +32,18 @@ class GulliViewPacketHandler(BaseRequestHandler):
     received from GulliView on the roof system. The received data is
     sent to the CSV file.
     """
-    listen_tag_id = None  # Tag ID to listen for
+    start_event: threading.Event = None
+    listen_tag_id: Union[str, int] = None  # Tag ID to listen for, 'all' or tag ID
     csv_writer = None  # Write your CSV here!
 
     def handle(self):
-        # Receiving binary detection dafta from GulliView
+        if not self.start_event.is_set():
+            # Skip messages before logging should start
+            return
+
+        # Receiving binary detection data from GulliView
         recv_buf = bytearray(self.request[0])
-        logging.debug(f"Received {len(recv_buf)} bytes from {self.client_address}")
+        # print(f"Received {len(recv_buf)} bytes from {self.client_address}")
 
         # Fetch the type of message from the buffer data
         msg_type = unpack_data(recv_buf, start=0)
@@ -81,11 +92,34 @@ class GulliViewPacketHandler(BaseRequestHandler):
                 self.csv_writer.writerow([timestamp, tag_id, c, x/1000, y/1000])
 
 
+class ControllerPacketHandler(BaseRequestHandler):
+    """
+    Listen to experiment controller messages to start logging automatically.
+    """
+    start_event: threading.Event = None
+
+    def handle(self):
+        msg = json.loads(self.request[0])
+
+        if msg['type'] == 'start' and not self.start_event.is_set():
+            print("Received start from controller")
+            self.start_event.set()
+
+
+def run_server(server: UDPServer):
+    thread_name = threading.current_thread().name
+    server_address = ':'.join(map(str, server.server_address))
+    print(f"Starting {thread_name} server on {server_address}")
+    with server:
+        server.serve_forever()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("gv_logger")
 
     parser.add_argument("-a", "--addr", help="The IP address to bind to", type=str, default="0.0.0.0")
     parser.add_argument("-p", "--port", help="The port to bind to", type=int, default=2121)
+    parser.add_argument("-c", "--controlport", help="The control message port to bind to", type=int, default=2424)
     parser.add_argument("-t", "--tag", help="Tag ID to filter by", default="all")
     parser.add_argument("-f", "--file", help="Filename to save to", default="gv.csv")
     args = parser.parse_args()
@@ -93,26 +127,40 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, _sigterm_handler)
     signal.signal(signal.SIGINT, _sigterm_handler)
 
-    # Set static variables on packet handler class to pass information to its instances
+    start_logging_event = threading.Event()
+
+    print("Setting up control packet handler")
+    ControllerPacketHandler.start_event = start_logging_event
+    control_server = UDPServer((args.addr, args.controlport), ControllerPacketHandler)
+    control_thread = threading.Thread(target=run_server, name='control', args=[control_server])
+
+    print(f"Setting up datalogger, logging to {args.file}, filtering for tag: {args.tag}")
+    csvfile = open(args.file, "w", newline='')
+    GulliViewPacketHandler.start_event = start_logging_event
     GulliViewPacketHandler.listen_tag_id = args.tag
+    GulliViewPacketHandler.csv_writer = csv.writer(csvfile, dialect='excel')
+    GulliViewPacketHandler.csv_writer.writerow(["time", "tag", "camera", "x", "y"]) # Write header
 
-    print(f"Listening for UDP datagrams at {args.addr}:{args.port}, filtering by tag ID: {args.tag}")
-    print(f"Data is being saved to {args.file}")
-    with open(args.file, "w", newline='') as csvfile:
-        GulliViewPacketHandler.csv_writer = csv.writer(csvfile, dialect='excel')
-        GulliViewPacketHandler.csv_writer.writerow(["time", "tag", "camera", "x", "y"]) # Write header
-        
-        with UDPServer((args.addr, args.port), GulliViewPacketHandler) as server:
-            server_thread = threading.Thread(target=server.serve_forever)
-            server_thread.start()
+    logging_server = UDPServer((args.addr, args.port), GulliViewPacketHandler)
+    logging_thread = threading.Thread(target=run_server, name='logging', args=[logging_server])
 
-            # Spin main thread until shutdown
-            while not shutdown:
-                signal.pause()
+    try:
+        control_thread.start()
+        logging_thread.start()
 
-            # Shut down server when node shuts down
-            print("Received signal, shutting down server")
-            server.shutdown()
-    print("Server shutdown, exiting")
-    exit(0)
+        signal.pause()
+    except Shutdown:
+        pass
+    finally:
+        print("Received shutdown, cleaning up...")
 
+        logging_server.shutdown()
+        print("Logging server shutdown")
+
+        control_server.shutdown()
+        print("Control server shutdown")
+
+        csvfile.close()
+        print("Logfile closed")
+
+        print("Clean up complete, exiting")
