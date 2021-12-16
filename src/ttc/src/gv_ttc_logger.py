@@ -42,10 +42,10 @@ if __name__ == '__main__':
             starttime = -1
             
             for row in reader:
-                time = row['time']
-                x = row['x']
-                y = row['y']
-                tag = row['tag']
+                time = float(row['time'])
+                x = float(row['x'])
+                y = float(row['y'])
+                tag = int(row['tag'])
                 
                 r = robot.receive_pos(int(tag), float(x), float(y), float(time))
                 ttc = r.collisionCheck()
