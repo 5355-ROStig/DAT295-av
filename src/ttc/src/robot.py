@@ -3,9 +3,9 @@
 import numpy as np
 import array
 import math
+from filter import Filter
 from datetime import datetime, timedelta
 import collections
-from kalman import Kalman
 from median import Median
 from split_median import SplitMedian
 

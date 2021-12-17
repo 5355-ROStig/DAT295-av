@@ -4,7 +4,7 @@ import array
 import math
 from datetime import datetime, timedelta
 import collections
-from kalman import Kalman
+# from kalman import Kalman
 from median import Median
 from split_median import SplitMedian
 import argparse
@@ -24,7 +24,8 @@ if __name__ == '__main__':
 
     # Choose filtering method
     if args.filter == 'kalman':
-        robot.filter_creator = lambda initPos : Kalman(initPos)
+        # robot.filter_creator = lambda initPos : Kalman(initPos)
+        ...
     elif args.filter == 'median':
         robot.filter_creator = lambda initPos : Median(initPos, args.median_samples)
     elif args.filter == 'split_median':
