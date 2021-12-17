@@ -55,8 +55,6 @@ class GulliViewPacketHandler(BaseRequestHandler):
         t2 = unpack_data(recv_buf, start=16)
         timestamp = ((t1 << 32) | t2) / 1000
 
-        logging.debug(f"Message type: {msg_type}, subtype: {sub_type}, timestamp: {timestamp}")
-
         if msg_type == 1 and sub_type == 2:
 
             # The number of tags in this message
@@ -116,10 +114,10 @@ class IntersectionPacketHandler(BaseRequestHandler):
         if not self.start_event.is_set():
             return
 
-        if msg["MSGTYPE"] == "ENTER":
+        if msg["MSGTYPE"] == "EXIT":
             # Stop logging
             self.start_event.clear()
-            print("Received coordination ENTER, stopping logging")
+            print("Received coordination EXIT, stopping logging")
 
             # TODO: rotate log file for next run
 
@@ -138,7 +136,7 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--addr", help="The IP address to bind to", type=str, default="0.0.0.0")
     parser.add_argument("-p", "--port", help="The position data port to bind to", type=int, default=2121)
     parser.add_argument("-c", "--coordport", help="The coordination message port to bind to", type=int, default=2323)
-    parser.add_argument("-c", "--controlport", help="The control message port to bind to", type=int, default=2424)
+    parser.add_argument("-o", "--controlport", help="The control message port to bind to", type=int, default=2424)
     parser.add_argument("-t", "--tag", help="Tag ID to filter by", default="all")
     parser.add_argument("-f", "--file", help="Filename to save to", default="gv.csv")
     args = parser.parse_args()
@@ -170,6 +168,7 @@ if __name__ == "__main__":
 
     try:
         control_thread.start()
+        coordination_thread.start()
         logging_thread.start()
 
         signal.pause()
