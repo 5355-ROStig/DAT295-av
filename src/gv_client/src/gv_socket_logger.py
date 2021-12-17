@@ -2,12 +2,13 @@
 import argparse
 import csv
 import json
-import logging
 import signal
 import struct
 import threading
 from socketserver import BaseRequestHandler, UDPServer
 from typing import Union
+
+from gullivutil import parse_packet
 
 
 class Shutdown(Exception):
@@ -26,14 +27,14 @@ def unpack_data(buf: bytearray, start: int) -> int:
 
 class GulliViewPacketHandler(BaseRequestHandler):
     """
-    Request handler to unpack GulliView packets and publish data on a ROS topic.
+    Request handler to unpack GulliView position packets and log to CSV file
 
     The handle() method is called when a 'request' (i.e. UDP packet) is
     received from GulliView on the roof system. The received data is
     sent to the CSV file.
     """
     start_event: threading.Event = None
-    listen_tag_id: Union[str, int] = None  # Tag ID to listen for, 'all' or tag ID
+    listen_tag_id: Union[str, int] = None  # Tag ID to listen for, or 'all' (default)
     csv_writer = None  # Write your CSV here!
 
     def handle(self):
@@ -43,51 +44,15 @@ class GulliViewPacketHandler(BaseRequestHandler):
 
         # Receiving binary detection data from GulliView
         recv_buf = bytearray(self.request[0])
-        # print(f"Received {len(recv_buf)} bytes from {self.client_address}")
+        packet = parse_packet(recv_buf)
 
-        # Fetch the type of message from the buffer data
-        msg_type = unpack_data(recv_buf, start=0)
-        sub_type = unpack_data(recv_buf, start=4)
+        for det in packet.detections:
+            # If we aren't listening for all tags, and this is not the tag
+            # we are listening for, skip it.
+            if self.listen_tag_id != "all" and det.tag_id != self.listen_tag_id:
+                continue
 
-        # Byte 8-12 is sequence number (unused)
-
-        t1 = unpack_data(recv_buf, start=12)
-        t2 = unpack_data(recv_buf, start=16)
-        timestamp = ((t1 << 32) | t2) / 1000
-
-        if msg_type == 1 and sub_type == 2:
-
-            # The number of tags in this message
-            length = unpack_data(recv_buf, start=28)
-
-            logging.debug(f"Detections in packet: {length}")
-
-            # Tag data from the GulliView server is placed in the buffer data
-            # from the 32nd bit. A new tag is placed then placed every 16th bit
-            for i in range(length):
-                base = 32 + (16 * i)
-
-                # Tag id, add 3 to offset subtraction done in GulliView (tags 0-3 are used for calibration)
-                tag_id = unpack_data(recv_buf, start=base) + 3
-
-                logging.debug(f"Detected tag id: {tag_id}")
-
-                # If we aren't listening for all tags, and this is not the tag
-                # we are listening for, skip it.
-                if self.listen_tag_id != "all" and tag_id != self.listen_tag_id:
-                    logging.debug("not interested, continuing...")
-                    continue
-
-                # X position of tag
-                x = unpack_data(recv_buf, start=base + 4)
-
-                # Y position of tag
-                y = unpack_data(recv_buf, start=base + 8)
-
-                # Camera capturing the tag
-                c = unpack_data(recv_buf, start=base + 12)
-
-                self.csv_writer.writerow([timestamp, tag_id, c, x/1000, y/1000])
+            self.csv_writer.writerow([packet.header.timestamp, det.tag_id, det.camera_id, det.x/1000, det.y/1000])
 
 
 class ControllerPacketHandler(BaseRequestHandler):
@@ -105,19 +70,21 @@ class ControllerPacketHandler(BaseRequestHandler):
 
 
 class IntersectionPacketHandler(BaseRequestHandler):
+    """
+    Listen to vehicle coordination messages to stop logging automatically.
+    """
     start_event: threading.Event = None
 
     def handle(self):
         msg = json.loads(self.request[0])
-        # print(f"Received packet: {msg} of type {msg['MSGTYPE']}")
 
         if not self.start_event.is_set():
             return
 
         if msg["MSGTYPE"] == "EXIT":
             # Stop logging
-            self.start_event.clear()
             print("Received coordination EXIT, stopping logging")
+            self.start_event.clear()
 
             # TODO: rotate log file for next run
 

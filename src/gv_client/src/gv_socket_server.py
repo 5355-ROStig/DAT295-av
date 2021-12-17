@@ -7,7 +7,7 @@ import rospy
 from std_msgs.msg import Header
 
 from gv_client.msg import GulliViewPosition
-
+from gullivutil import parse_packet
 
 GV_POSITION_TOPIC = "gv_positions"
 
@@ -29,59 +29,21 @@ class GulliViewPacketHandler(BaseRequestHandler):
     listen_tag_id = None  # Tag ID to listen for
 
     def handle(self):
-        # Receiving binary detection dafta from GulliView
+        # Receiving binary detection data from GulliView
         recv_buf = bytearray(self.request[0])
-        rospy.logdebug(f"Received {len(recv_buf)} bytes from {self.client_address}")
+        packet = parse_packet(recv_buf)
 
-        # Fetch the type of message from the buffer data
-        msg_type = unpack_data(recv_buf, start=0)
-        sub_type = unpack_data(recv_buf, start=4)
+        for det in packet.detections:
+            # If we aren't listening for all tags, and this is not the tag
+            # we are listening for, skip it.
+            if self.listen_tag_id != "all" and det.tag_id != self.listen_tag_id:
+                continue
 
-        # Byte 8-12 is sequence number (unused)
+            header = Header()
+            header.stamp = rospy.Time.from_sec(packet.header.timestamp)
+            msg = GulliViewPosition(header=header, x=det.x, y=det.y, tagId=det.tag_id, cameraId=det.camera_id)
 
-        t1 = unpack_data(recv_buf, start=12)
-        t2 = unpack_data(recv_buf, start=16)
-        timestamp = ((t1 << 32) | t2) / 1000
-
-        rospy.logdebug(f"Message type: {msg_type}, subtype: {sub_type}, timestamp: {timestamp}")
-
-        if msg_type == 1 and sub_type == 2:
-
-            # The number of tags in this message
-            length = unpack_data(recv_buf, start=28)
-
-            rospy.logdebug(f"Detections in packet: {length}")
-
-            # Tag data from the GulliView server is placed in the buffer data
-            # from the 32nd bit. A new tag is placed then placed every 16th bit
-            for i in range(length):
-                base = 32 + (16 * i)
-
-                # Tag id, add 3 to offset subtraction done in GulliView (tags 0-3 are used for calibration)
-                tag_id = unpack_data(recv_buf, start=base) + 3
-
-                rospy.logdebug(f"Detected tag id: {tag_id}")
-
-                # If we aren't listening for all tags, and this is not the tag
-                # we are listening for, skip it.
-                if self.listen_tag_id != "all" and tag_id != self.listen_tag_id:
-                    rospy.logdebug("not interested, continuing...")
-                    continue
-
-                # X position of tag
-                x = unpack_data(recv_buf, start=base + 4)
-
-                # Y position of tag
-                y = unpack_data(recv_buf, start=base + 8)
-
-                # Camera capturing the tag
-                c = unpack_data(recv_buf, start=base + 12)
-
-                header = Header()
-                header.stamp = rospy.Time.from_sec(timestamp)
-                msg = GulliViewPosition(header=header, x=x, y=y, tagId=tag_id, cameraId=c)
-
-                self.publisher.publish(msg)
+            self.publisher.publish(msg)
 
 
 if __name__ == "__main__":
