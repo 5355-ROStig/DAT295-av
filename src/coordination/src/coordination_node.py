@@ -188,7 +188,7 @@ class CoordinationNode:
             return min(road_section.left.x, road_section.right.x) - road_section.stopline_offset
 
     def broadcast_msg(self, msg):
-        data = bytes(json.dumps(msg), "utf-8")
+        data = json.dumps(msg).encode("utf-8")
         self.sock.sendto(data, (BROADCAST_IP, self.port))
 
     def execute_v2i_protocol(self):
@@ -272,8 +272,10 @@ class CoordinationNode:
             self.broadcast_msg(self.ack_msg)
             self.rate.sleep()
 
-        rospy.loginfo("Spamming EXIT for all eternity :)")
-        while not rospy.is_shutdown():
+        exit_flood_duration = rospy.Duration(secs=5)
+        start_flood = rospy.Time.now()
+        rospy.loginfo("Spamming EXIT for all eternity (5 seconds)")
+        while not rospy.is_shutdown() and rospy.Time.now() - start_flood < exit_flood_duration:
             self.broadcast_msg(self.exit_msg)
             self.rate.sleep()
 
@@ -287,10 +289,13 @@ class CoordinationNode:
 
 
 class IntersectionPacketHandler(BaseRequestHandler):
+    coordinator_lock = threading.Lock()  # Lock to protect swapping cls.coordinator_node
     coordinator_node = None  # Static reference to ROS topic publisher
 
     def handle(self):
         msg = json.loads(self.request[0])
+
+        self.coordinator_lock.acquire()
 
         if msg['UID'] == self.coordinator_node.tag_id:
             # Ignore our own broadcasts
@@ -310,6 +315,8 @@ class IntersectionPacketHandler(BaseRequestHandler):
                 self.coordinator_node.sched_rcvd = True
                 self.coordinator_node.schedule = msg["SCHED_LIST"]
 
+        self.coordinator_lock.release()
+
 
 if __name__ == '__main__':
     host = "0.0.0.0"
@@ -317,7 +324,8 @@ if __name__ == '__main__':
 
     coordination_node = CoordinationNode(port)
 
-    IntersectionPacketHandler.coordinator_node = coordination_node
+    with IntersectionPacketHandler.coordinator_lock:
+        IntersectionPacketHandler.coordinator_node = coordination_node
 
     rospy.loginfo(f"Starting UDP server on {host}:{port}")
     with UDPServer((host, port), IntersectionPacketHandler) as server:
@@ -328,14 +336,20 @@ if __name__ == '__main__':
         # Begin executing protocol
         # V2V is significantly different from V2I (traffic light) so we separate their logic here
         scenario_param = rospy.get_param('/scenario')
-        if scenario_param == 'scenario3':
-            coordination_node.execute_v2i_protocol()
-        elif scenario_param in ['scenario1', 'scenario2']:
-            coordination_node.execute_protocol()
-        else:
-            raise NotImplementedError('Unknown scenario.')
+        while not rospy.is_shutdown():
+            try:
+                if scenario_param in ['scenario1', 'scenario2']:
+                    coordination_node.execute_protocol()
+                elif scenario_param == 'scenario3':
+                    coordination_node.execute_v2i_protocol()
+                else:
+                    raise NotImplementedError('Unknown scenario.')
+            except KeyboardInterrupt:
+                # Handle C-c gracefully
+                rospy.signal_shutdown()
 
-        # Shut down server when node shuts down
-        rospy.loginfo("Node received shutdown signal, shutting down server")
-        server.shutdown()
-        rospy.loginfo("Server shutdown, exiting")
+            # Create new instance of coordination protocol for next run
+            rospy.loginfo("Resetting coordination node")
+            coordination_node = CoordinationNode(port)
+            with IntersectionPacketHandler.coordinator_lock:
+                IntersectionPacketHandler.coordinator_node = coordination_node
