@@ -77,6 +77,10 @@ class TrafficLight:
 
         print(f"Waiting for ACK2 and EXIT2")
         self.unicast_msg(self.ack_msg, schedule[0].ip)  # ACK1
+
+        # Reset ACK2 flag before transmitting new schedule
+        schedule[1].ack_rcvd = False
+
         self.unicast_msg(self.sched_msg(uid_schedule[1:]), schedule[1].ip)  # SCHED2
 
         while not (schedule[1].ack_rcvd and schedule[1].exit_rcvd):
