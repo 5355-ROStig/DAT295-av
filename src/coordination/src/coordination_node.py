@@ -347,6 +347,7 @@ if __name__ == '__main__':
             except KeyboardInterrupt:
                 # Handle C-c gracefully
                 rospy.signal_shutdown()
+                break
 
             # Create new instance of coordination protocol for next run
             rospy.loginfo("Resetting coordination node")
