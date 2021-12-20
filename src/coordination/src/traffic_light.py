@@ -86,7 +86,7 @@ class TrafficLight:
         while not (schedule[1].ack_rcvd and schedule[1].exit_rcvd):
             self.unicast_msg(self.ack_msg, schedule[0].ip)  # ACK1
             sleep(1 / rate)
-        self.unicast_msg(self.sched_msg(uid_schedule[1:]), schedule[1].ip)  # SCHED2
+            self.unicast_msg(self.sched_msg(uid_schedule[1:]), schedule[1].ip)  # SCHED2
 
         print(f"Broadcasting ACKs forever")
         while True:
