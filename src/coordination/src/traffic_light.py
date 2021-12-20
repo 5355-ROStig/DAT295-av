@@ -46,11 +46,11 @@ class TrafficLight:
         self.sched_msg = lambda schedule: {"UID": self.uid, "MSGTYPE": "SCHED", "SCHED_LIST": schedule}
 
     def broadcast_msg(self, msg):
-        data = bytes(json.dumps(msg), "utf-8")
+        data = json.dumps(msg).encode("utf-8")
         self.sock.sendto(data, (BROADCAST_IP, self.port))
 
     def unicast_msg(self, msg, ip):
-        data = bytes(json.dumps(msg), "utf-8")
+        data = json.dumps(msg).encode("utf-8")
         self.sock.sendto(data, (ip, self.port))
 
     def execute_protocol(self):
