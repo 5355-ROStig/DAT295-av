@@ -1,3 +1,4 @@
+import time
 from time import sleep
 import json
 import threading
@@ -88,20 +89,26 @@ class TrafficLight:
             sleep(1 / rate)
             self.unicast_msg(self.sched_msg(uid_schedule[1:]), schedule[1].ip)  # SCHED2
 
-        print(f"Broadcasting ACKs forever")
-        while True:
+        start_flood = time.time()
+        flood_duration = 5  # seconds
+        print(f"Broadcasting ACKs forever (5 seconds)")
+        while time.time() - start_flood < flood_duration:
             self.broadcast_msg(self.ack_msg)
             sleep(1 / rate)
 
 
 class TrafficPacketHandler(BaseRequestHandler):
+    traffic_light_lock = threading.Lock()
     traffic_light = None
 
     def handle(self):
         msg = json.loads(self.request[0])
 
+        self.traffic_light_lock.acquire()
+
+        # Ignore our own broadcasts
         if msg['UID'] == self.traffic_light.uid:
-            # Ignore our own broadcasts
+            self.traffic_light_lock.release()
             return
 
         # print(f"Received msg {msg} from {self.client_address[0]}")
@@ -134,6 +141,8 @@ class TrafficPacketHandler(BaseRequestHandler):
                 else:
                     self.traffic_light.snd_car.exit_rcvd = True
 
+        self.traffic_light_lock.release()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("traffic_light")
@@ -142,18 +151,29 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     tl = TrafficLight(args.port)
-    TrafficPacketHandler.traffic_light = tl
+
+    with TrafficPacketHandler.traffic_light_lock:
+        TrafficPacketHandler.traffic_light = tl
 
     print(f'Starting UDP server on {args.addr}:{args.port}')
     with UDPServer((args.addr, args.port), TrafficPacketHandler) as server:
         # Start new thread for UDP server
-        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread = threading.Thread(target=server.serve_forever, name='server')
+        server_thread.daemon = True
         server_thread.start()
 
-        try:
-            tl.execute_protocol()
-        except KeyboardInterrupt:
-            pass
+        while True:
+            try:
+                print("Beginning traffic light protocol")
+                tl.execute_protocol()
+
+                # Create new traffic light instance for next coordination event
+                print("\nResetting traffic light")
+                tl = TrafficLight(args.port)
+                with TrafficPacketHandler.traffic_light_lock:
+                    TrafficPacketHandler.traffic_light = tl
+            except KeyboardInterrupt:
+                break
 
         print('\nShutting down server')
         server.shutdown()
