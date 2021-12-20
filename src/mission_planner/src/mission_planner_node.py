@@ -107,10 +107,6 @@ class MissionPlannerNode:
             rospy.logerr("Timeout while waiting for start command")
             raise e
 
-        rospy.loginfo("Starting mission...")
-
-        self.execute_mission()
-
     @staticmethod
     def _await(condition: Callable[[], bool], rate: int = 2, timeout: float = 10.0):
         """Block until a given condition is True.
@@ -208,6 +204,7 @@ class MissionPlannerNode:
 
 
 if __name__ == '__main__':
-    mission_planner = MissionPlannerNode()
-
-    # rospy.spin()
+    while not rospy.is_shutdown():
+        mission_planner = MissionPlannerNode()
+        rospy.loginfo("Starting mission execution")
+        mission_planner.execute_mission()
