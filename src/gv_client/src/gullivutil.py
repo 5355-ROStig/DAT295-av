@@ -39,11 +39,11 @@ def parse_packet(binary_data: bytearray) -> Packet:
         raise ValueError(f"Received unexpected GulliView packet subtype '{header.subtype}'")
 
     detections: List[Detection] = []
-    offset = 32
+    offset = struct.calcsize(HEADER_FORMAT)
     for _ in range(header.length):
         detection = Detection._make(struct.unpack_from(DETECTION_FORMAT, binary_data, offset=offset))
         detections.append(detection)
-        offset += 16
+        offset += struct.calcsize(DETECTION_FORMAT)
 
     return Packet(header=header, detections=detections)
 
