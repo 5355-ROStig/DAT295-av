@@ -2,11 +2,12 @@
 import argparse
 import csv
 import json
+import pathlib
 import signal
 import struct
 import threading
 from socketserver import BaseRequestHandler, UDPServer
-from typing import Union
+from typing import Union, Optional, Generator
 
 from gullivutil import parse_packet
 
@@ -35,24 +36,62 @@ class GulliViewPacketHandler(BaseRequestHandler):
     """
     start_event: threading.Event = None
     listen_tag_id: Union[str, int] = None  # Tag ID to listen for, or 'all' (default)
-    csv_writer = None  # Write your CSV here!
+    _file_name_gen = None
+    _csv_file = None  # File object for CSV file used by writer
+    _csv_writer = None  # Write your CSV here!
+    _writer_lock = threading.Lock()
 
     def handle(self):
-        if not self.start_event.is_set():
-            # Skip messages before logging should start
-            return
+        with self._writer_lock:
+            if not self.start_event.is_set():
+                # Skip messages before logging should start
+                return
 
-        # Receiving binary detection data from GulliView
-        recv_buf = bytearray(self.request[0])
-        packet = parse_packet(recv_buf)
+            # Receiving binary detection data from GulliView
+            recv_buf = bytearray(self.request[0])
+            packet = parse_packet(recv_buf)
 
-        for det in packet.detections:
-            # If we aren't listening for all tags, and this is not the tag
-            # we are listening for, skip it.
-            if self.listen_tag_id != "all" and det.tag_id != self.listen_tag_id:
-                continue
+            for det in packet.detections:
+                # If we aren't listening for all tags, and this is not the tag
+                # we are listening for, skip it.
+                if self.listen_tag_id != "all" and det.tag_id != self.listen_tag_id:
+                    continue
 
-            self.csv_writer.writerow([packet.header.timestamp, det.tag_id, det.camera_id, det.x/1000, det.y/1000])
+                self._csv_writer.writerow([packet.header.timestamp, det.tag_id, det.camera_id, det.x / 1000, det.y / 1000])
+
+    @staticmethod
+    def _file_name_generator(initial_name: str) -> Generator[str, None, None]:
+        """
+        Generate a sequence of file names.
+
+        Given a path like `log.csv`, this yields `log_0.csv`, `log_1.csv`, etc.
+        """
+        initial = pathlib.Path(initial_name)
+        count = 0
+        while True:
+            yield str(initial.with_stem(f'{initial.stem}_{count}'))
+            count += 1
+
+    @classmethod
+    def rotate_log_file(cls, name: Optional[str] = None):
+        with cls._writer_lock:
+            if cls._csv_file is None:
+                cls._file_name_gen = cls._file_name_generator(name)
+
+            if cls._csv_file is not None:
+                cls._csv_file.close()
+
+            next_file = next(cls._file_name_gen)
+            print(f"Rotating logfile to '{next_file}'")
+            cls._csv_file = open(next_file, "w", newline='')
+            cls._csv_writer = csv.writer(cls._csv_file, dialect='excel')
+            cls._csv_writer.writerow(["time", "tag", "camera", "x", "y"])  # Write header
+
+    @classmethod
+    def shutdown(cls):
+        with cls._writer_lock:
+            cls._csv_file.close()
+            print("Logfile closed")
 
 
 class ControllerPacketHandler(BaseRequestHandler):
@@ -86,7 +125,7 @@ class IntersectionPacketHandler(BaseRequestHandler):
             print("Received coordination EXIT, stopping logging")
             self.start_event.clear()
 
-            # TODO: rotate log file for next run
+            GulliViewPacketHandler.rotate_log_file()
 
 
 def run_server(server: UDPServer):
@@ -124,19 +163,16 @@ if __name__ == "__main__":
     coordination_thread = threading.Thread(target=run_server, name='coordination', args=[coordination_server])
 
     print(f"Setting up datalogger, logging to {args.file}, filtering for tag: {args.tag}")
-    csvfile = open(args.file, "w", newline='')
     GulliViewPacketHandler.start_event = start_logging_event
     GulliViewPacketHandler.listen_tag_id = args.tag
-    GulliViewPacketHandler.csv_writer = csv.writer(csvfile, dialect='excel')
-    GulliViewPacketHandler.csv_writer.writerow(["time", "tag", "camera", "x", "y"])  # Write header
-
+    GulliViewPacketHandler.rotate_log_file(name=args.file)
     logging_server = UDPServer((args.addr, args.port), GulliViewPacketHandler)
     logging_thread = threading.Thread(target=run_server, name='logging', args=[logging_server])
 
     try:
+        logging_thread.start()
         control_thread.start()
         coordination_thread.start()
-        logging_thread.start()
 
         signal.pause()
     except Shutdown:
@@ -146,14 +182,12 @@ if __name__ == "__main__":
 
         logging_server.shutdown()
         print("Logging server shutdown")
+        GulliViewPacketHandler.shutdown()
 
         control_server.shutdown()
         print("Control server shutdown")
 
         coordination_server.shutdown()
         print("Coordination server shutdown")
-
-        csvfile.close()
-        print("Logfile closed")
 
         print("Clean up complete, exiting")
