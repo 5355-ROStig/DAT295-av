@@ -10,3 +10,9 @@ devel/*
 
 # Python virtual environment
 venv/
+.Rproj.user
+
+# Random data capture files
+/src/**/*.csv
+/src/**/*.csv#
+/datacap/**/*.pdf
