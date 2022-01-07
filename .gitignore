@@ -16,3 +16,6 @@ venv/
 /src/**/*.csv
 /src/**/*.csv#
 /datacap/**/*.pdf
+
+# R
+.Rhistory

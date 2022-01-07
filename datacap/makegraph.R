@@ -61,10 +61,9 @@ for(scenario in scenarios) {
   addList <- function(p, l){Reduce(function(x, y){x+y}, l, init=p)}
   plot <- addList(plot, raw)
   plot <- addList(plot, smooth)
-  plot <- plot +
-    stat_boxplot(geom ='errorbar', data = data.frame(lol), aes(x=0, y=lol), width=0.5) +
-    geom_boxplot(lwd=0.75, data = data.frame(lol), aes(x=0, y=lol))
-  #plot <- addList(plot, minlist)
+  plot <- addList(plot, minlist)
+  plot <- plot + labs(x = "Time to minimum time to collision",
+                      y = "Time to collision")
 
   print(plot)
   ggsave(plot = plot,
