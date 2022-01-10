@@ -17,6 +17,10 @@ ttcPath = normalizePath(file.path("src", "ttc", "src", "gv_ttc_logger.py"))
 
 scenarios <- list.dirs('datacap', recursive=FALSE)
 
+# Variables used for making boxplots later
+ttc = c()
+ttc_scenario = c()
+
 for(scenario in scenarios) {
   print("---------------------------------")
   print(paste("Prcessing scenario ", basename(scenario)))
@@ -26,19 +30,19 @@ for(scenario in scenarios) {
   raw = list()
   smooth = list()
   minlist = list()
-  lol = c()
-  
+
   for(experiment in list.files(scenario, full.names = TRUE)) {
     output = tempfile(fileext = ".csv")
     print(paste("Running TTC analysis of ", experiment))
-    system(paste("python3 ", ttcPath, " -f median -s 20 ", experiment, " ", output))
+    system(paste("python3 \"", ttcPath, "\" -f median -s 20 \"", experiment, "\" \"", output, "\"", sep = ''))
     data <- read.csv(output)
     data <- data[is.finite(rowSums(data)),] # Remove INF
-    # Remove everything after 5s because we moved the cars manually in some experiments
+    # Remove everything after 5s because cars were manually moved during some experiments
     data <- subset(data, time<5)
     
     minrow = data[which.min(data$ttc),]
-    lol <- c(lol, minrow[1,]$ttc)
+    ttc <- c(ttc, minrow[1,]$ttc)
+    ttc_scenario <- c(ttc_scenario, basename(scenario))
     
     data$time = data$time - minrow[1,]$time
     minrow$time = minrow$time - minrow[1,]$time
@@ -67,7 +71,22 @@ for(scenario in scenarios) {
 
   print(plot)
   ggsave(plot = plot,
-         filename = paste(basename(scenario), ".pdf"),
+         filename = paste(basename(scenario), ".pdf", sep = ''),
          path = "datacap",
          device = "pdf")
 }
+
+# Now, create final boxplots
+frame <- data.frame(ttc = ttc, scenario = ttc_scenario)
+plot <- ggplot(data = frame, aes(x=scenario, y=ttc)) +
+        theme_minimal() +
+        stat_boxplot(geom ='errorbar', width=0.5) +
+        geom_boxplot() +
+        labs(x = "Experiment", y = "Time to collision")
+
+print(plot)
+
+ggsave(plot = plot,
+       filename = "summary.pdf",
+       path = "datacap",
+       device = "pdf")
