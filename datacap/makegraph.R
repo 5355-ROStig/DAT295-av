@@ -25,7 +25,7 @@ for(scenario in scenarios) {
   print("---------------------------------")
   print(paste("Prcessing scenario ", basename(scenario)))
   
-  plot <- ggplot() + theme_minimal() + xlim(-4, 1) + ylim(0, 6.5)
+  plot <- ggplot() + theme_minimal(base_size = 20) + xlim(-4, 1) + ylim(0, 6.5)
   
   raw = list()
   smooth = list()
@@ -79,7 +79,7 @@ for(scenario in scenarios) {
 # Now, create final boxplots
 frame <- data.frame(ttc = ttc, scenario = ttc_scenario)
 plot <- ggplot(data = frame, aes(x=scenario, y=ttc)) +
-        theme_minimal() +
+        theme_minimal(base_size = 20) +
         stat_boxplot(geom ='errorbar', width=0.5) +
         geom_boxplot() +
         labs(x = "Experiment", y = "Time to collision")
