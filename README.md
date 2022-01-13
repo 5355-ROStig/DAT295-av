@@ -52,7 +52,7 @@ source ~/.bashrc
 
 ### Braking and Platooning specific
 
-Use Case 1
+#### Use Case 1
 
 Place two robots one after another with a safe distance.
 
