@@ -93,7 +93,7 @@ class CoordinationNode:
         rospy.Subscriber('/experiment_start', Empty, self._start_cb)
         try:
             rospy.loginfo("Awaiting start command from experiment controller")
-            self._await(self._start_received, timeout=30.0)
+            self._await(self._start_received, timeout=300.0)
         except TimeoutError as e:
             rospy.logerr("Timeout while waiting for start command")
             raise e
