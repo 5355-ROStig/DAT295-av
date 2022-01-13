@@ -54,7 +54,7 @@ source ~/.bashrc
 
 #### Use Case 1
 
-Place two robots one after another with a safe distance.
+Place two robots one after another with a safe distance. The robots will be going during 3 sec and speed 0.2 (can be changed in the code).
 
 For running experiment three files need to be activated.
 At front robot:
