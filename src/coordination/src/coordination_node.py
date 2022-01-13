@@ -299,6 +299,7 @@ class IntersectionPacketHandler(BaseRequestHandler):
 
         if msg['UID'] == self.coordinator_node.tag_id:
             # Ignore our own broadcasts
+            self.coordinator_lock.release()
             return
 
         # rospy.loginfo(f"Received packet: {msg} of type {msg['MSGTYPE']}")
