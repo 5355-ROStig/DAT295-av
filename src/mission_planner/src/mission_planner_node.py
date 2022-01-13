@@ -122,7 +122,7 @@ class MissionPlannerNode:
         timeout = rospy.Duration(secs=timeout)
 
         start_time = rospy.Time.now()
-        while rospy.Time.now() - start_time < timeout:
+        while rospy.Time.now() - start_time < timeout and not rospy.is_shutdown():
             if condition():
                 return
             rate.sleep()
