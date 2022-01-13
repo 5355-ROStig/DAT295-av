@@ -50,6 +50,10 @@ echo "~/DAT295-av/devel/setup.bash" >> ~/.bashrc
 source ~/.bashrc
 ```
 
+### Braking and Platooning specific
+
+To be written...
+
 ### Intersection arbitation specific
 First start GulliView on the roof mounted computer:
 ```bash
