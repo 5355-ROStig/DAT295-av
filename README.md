@@ -75,7 +75,7 @@ Finally, measure the distance between the robots after stop and compare with the
 
 
 
-### Use Case 2
+#### Use Case 2
 
 To run this experiment it is enough to use only one robot with IR sensor and one obsticle in front (e.g. cardboard wall) which the robot will be going to. The robot is supposed to stop if the distance to the object is shorter than 50 cm. The speed used in the experiment was 0.2 (can be changed).
 
@@ -83,15 +83,34 @@ Start the robot:
 ```bash
 rosrun use-case-2-py
 ```
+The program will print the distance to the object. 
 
-Use Case 3:
+#### Use Case 3
+
+Place two robots one after another on a safe distance (70 cm was used). Back robot must be robot with a LiDAR-sensor. 
+
+Run firstly the back robot (it will adopt its distance to the front robot):
 ```bash
-test
+rosrun lidar_receiver.py
 ```
 
-Use Case 4:
+Run front robot:
 ```bash
-test
+rosrun use-case-3-front.py
+```
+
+
+#### Use Case 4
+
+Place robots on the safe distance one after another. 
+
+Run first back robot:
+```bash
+rosrun use-case-4-back-new.py
+```
+Then run front robot:
+```bash
+rosrun use-case-4-front.py
 ```
 
 ### Intersection arbitation specific
