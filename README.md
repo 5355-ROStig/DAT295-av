@@ -52,8 +52,22 @@ source ~/.bashrc
 
 ### Braking and Platooning specific
 
-To be written...
 Use Case 1:
+```bash
+test
+```
+
+Use Case 2:
+```bash
+test
+```
+
+Use Case 3:
+```bash
+test
+```
+
+Use Case 4:
 ```bash
 test
 ```
