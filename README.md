@@ -52,10 +52,26 @@ source ~/.bashrc
 
 ### Braking and Platooning specific
 
-Use Case 1:
+Use Case 1
+
+Place two robots one after another with a safe distance.
+
+For running experiment three files need to be activated.
+At front robot:
 ```bash
-test
+rosrun use-case-1.py front
 ```
+At back robot:
+```bash
+rosrun use-case-1.py back
+```
+
+Start robots simultaneously (just on some computer that is contected to Rostig network):
+```bash
+python init_start.py
+```
+
+
 
 Use Case 2:
 ```bash
