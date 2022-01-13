@@ -40,7 +40,7 @@ class GulliViewPacketHandler(BaseRequestHandler):
                 continue
 
             header = Header()
-            header.stamp = rospy.Time.from_sec(packet.header.timestamp)
+            header.stamp = rospy.Time.from_sec(packet.header.timestamp / 1000)
             msg = GulliViewPosition(header=header, x=det.x, y=det.y, tagId=det.tag_id, cameraId=det.camera_id)
 
             self.publisher.publish(msg)
