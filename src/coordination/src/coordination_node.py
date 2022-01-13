@@ -130,7 +130,7 @@ class CoordinationNode:
         timeout = rospy.Duration(secs=timeout)
 
         start_time = rospy.Time.now()
-        while rospy.Time.now() - start_time < timeout:
+        while rospy.Time.now() - start_time < timeout and not rospy.is_shutdown():
             if condition():
                 return
             rate.sleep()
@@ -355,3 +355,6 @@ if __name__ == '__main__':
             coordination_node = CoordinationNode(port)
             with IntersectionPacketHandler.coordinator_lock:
                 IntersectionPacketHandler.coordinator_node = coordination_node
+
+        rospy.loginfo("Received shutdown, stopping server")
+        server.shutdown()
