@@ -54,7 +54,7 @@ source ~/.bashrc
 
 #### Use Case 1
 
-Place two robots one after another with a safe distance. The robots will be going during 3 sec and speed 0.2 (can be changed in the code).
+Place two robots one after another with a safe distance. The robots will be in the movement 3 sec and speed 0.2 (can be changed in the code).
 
 For running experiment three files need to be activated.
 At front robot:
@@ -71,11 +71,17 @@ Start robots simultaneously (just on some computer that is contected to Rostig n
 python init_start.py
 ```
 
+Finally, measure the distance between the robots after stop and compare with the initial one.
 
 
-Use Case 2:
+
+### Use Case 2
+
+To run this experiment it is enough to use only one robot with IR sensor and one obsticle in front (e.g. cardboard wall) which the robot will be going to. The robot is supposed to stop if the distance to the object is shorter than 50 cm. The speed used in the experiment was 0.2 (can be changed).
+
+Start the robot:
 ```bash
-test
+rosrun use-case-2-py
 ```
 
 Use Case 3:
