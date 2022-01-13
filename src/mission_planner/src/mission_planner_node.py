@@ -22,17 +22,6 @@ class MissionPlannerNode:
         rospy.init_node('mission_planner_node', anonymous=True)
         rospy.loginfo("Starting mission planner node")
 
-        self.started = False
-        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
-        try:
-            rospy.loginfo("Awaiting start command from experiment controller")
-            self._await(self._start_received, timeout=300.0)
-        except TimeoutError as e:
-            rospy.logerr("Timeout while waiting for start command")
-            raise e
-
-        self.pos: Optional[Position] = None
-
         scenario_param = rospy.get_param('/scenario')
         rospy.loginfo(f"Loading mission for requested scenario '{scenario_param}'")
 
@@ -44,14 +33,9 @@ class MissionPlannerNode:
         self.go = False
         rospy.Subscriber('go', Empty, self._receive_go)
 
-        # Wait for initial position data
-        try:
-            rospy.loginfo("Awaiting initial position data")
-            self._await(self._initial_position_received, timeout=30.0)
-        except TimeoutError as e:
-            rospy.logerr("Timeout while waiting for initial position")
-            raise e
-        rospy.loginfo(f"Initial position received: ({self.pos.x}, {self.pos.y})")
+        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+        self.exit_pub = rospy.Publisher('exit', Empty, queue_size=1)
+        self.stopped_pub = rospy.Publisher('stopped', Empty, queue_size=1)
 
         # Query for environment/map data
         rospy.loginfo("Waiting for map data service")
@@ -64,6 +48,26 @@ class MissionPlannerNode:
             rospy.logerr("Error while fetching road data from map data server", e)
             rospy.signal_shutdown()
         rospy.loginfo("Retrieved map data")
+
+        self.started = False
+        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
+        try:
+            rospy.loginfo("Awaiting start command from experiment controller")
+            self._await(self._start_received, timeout=300.0)
+        except TimeoutError as e:
+            rospy.logerr("Timeout while waiting for start command")
+            raise e
+
+        self.pos: Optional[Position] = None
+
+        # Wait for initial position data
+        try:
+            rospy.loginfo("Awaiting initial position data")
+            self._await(self._initial_position_received, rate=20, timeout=30.0)
+        except TimeoutError as e:
+            rospy.logerr("Timeout while waiting for initial position")
+            raise e
+        rospy.loginfo(f"Initial position received: ({self.pos.x}, {self.pos.y})")
 
         rospy.loginfo("Determining mission parameters")
         # Figure out which road we are starting from
@@ -102,10 +106,6 @@ class MissionPlannerNode:
             rospy.loginfo(f"  - Phase {idx}/{len(self.phases)}: {phase.name}")
         rospy.loginfo("========== END OF SUMMARY ==========")
         rospy.loginfo("")
-
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-        self.exit_pub = rospy.Publisher('exit', Empty, queue_size=1)
-        self.stopped_pub = rospy.Publisher('stopped', Empty, queue_size=1)
 
     @staticmethod
     def _await(condition: Callable[[], bool], rate: int = 2, timeout: float = 10.0):

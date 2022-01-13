@@ -26,15 +26,6 @@ class CoordinationNode:
         rospy.init_node('coordination_node', anonymous=True)
         rospy.loginfo("Starting intersection coordination protocol node")
 
-        self.started = False
-        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
-        try:
-            rospy.loginfo("Awaiting start command from experiment controller")
-            self._await(self._start_received, timeout=300.0)
-        except TimeoutError as e:
-            rospy.logerr("Timeout while waiting for start command")
-            raise e
-
         self.pos: Optional[Position] = None
 
         self.port = port
@@ -57,15 +48,6 @@ class CoordinationNode:
 
         rospy.Subscriber('gv_positions', GulliViewPosition, self._position_cb)
 
-        # Wait for initial position data
-        try:
-            rospy.loginfo("Awaiting initial position data")
-            self._await(self._initial_position_received, timeout=30.0)
-        except TimeoutError as e:
-            rospy.logerr("Timeout while waiting for initial position")
-            raise e
-        rospy.loginfo(f"Initial position received: ({self.pos.x}, {self.pos.y})")
-
         # Query for environment/map data
         rospy.loginfo("Waiting for map data service")
         rospy.wait_for_service('intersection_data')
@@ -77,6 +59,38 @@ class CoordinationNode:
             rospy.logerr("Error while fetching road data from map data server", e)
             rospy.signal_shutdown()
         rospy.loginfo("Retrieved map data")
+
+        rospy.Subscriber("stopped", Empty, self._receive_stopped)
+        rospy.Subscriber("exit", Empty, self._receive_exit)
+
+        # Socket for sending V2V/V2I packages
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+        # Rate for sleeps zZz
+        self.rate = rospy.Rate(10)  # Hz
+
+        # Used for telling mission planner when car should cross
+        self.go_pub = rospy.Publisher("/go", Empty, queue_size=1)
+
+        self.started = False
+        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
+        try:
+            rospy.loginfo("Awaiting start command from experiment controller")
+            self._await(self._start_received, timeout=300.0)
+            self.pos: Optional[Position] = None  # Reset position at experiment start
+        except TimeoutError as e:
+            rospy.logerr("Timeout while waiting for start command")
+            raise e
+
+        # Wait for initial position data
+        try:
+            rospy.loginfo("Awaiting initial position data")
+            self._await(self._initial_position_received, rate=20, timeout=30.0)
+        except TimeoutError as e:
+            rospy.logerr("Timeout while waiting for initial position")
+            raise e
+        rospy.loginfo(f"Initial position received: ({self.pos.x}, {self.pos.y})")
 
         rospy.loginfo("Determining mission parameters")
         # Figure out which road we are starting from
@@ -95,23 +109,10 @@ class CoordinationNode:
         self.stop_line = self._find_stopline(self.destination_road)
         self.strategy: CoordinationStrategy = COORDINATION_STRATEGIES[self.start_road.priority_sign](self)
 
-        rospy.Subscriber("stopped", Empty, self._receive_stopped)
-        rospy.Subscriber("exit", Empty, self._receive_exit)
-
-        # Socket for sending V2V/V2I packages
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
         # Message types
         self.enter_msg = {"UID": self.tag_id, "MSGTYPE": "ENTER", "CROAD": self.start_road.name}
         self.ack_msg = {"UID": self.tag_id, "MSGTYPE": "ACK"}
         self.exit_msg = {"UID": self.tag_id, "MSGTYPE": "EXIT"}
-
-        # Rate for sleeps zZz
-        self.rate = rospy.Rate(10)  # Hz
-
-        # Used for telling mission planner when car should cross
-        self.go_pub = rospy.Publisher("/go", Empty, queue_size=1)
 
         rospy.loginfo("Starting coordination protocol...")
 
