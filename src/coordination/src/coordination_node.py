@@ -26,6 +26,15 @@ class CoordinationNode:
         rospy.init_node('coordination_node', anonymous=True)
         rospy.loginfo("Starting intersection coordination protocol node")
 
+        self.started = False
+        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
+        try:
+            rospy.loginfo("Awaiting start command from experiment controller")
+            self._await(self._start_received, timeout=300.0)
+        except TimeoutError as e:
+            rospy.logerr("Timeout while waiting for start command")
+            raise e
+
         self.pos: Optional[Position] = None
 
         self.port = port
@@ -88,15 +97,6 @@ class CoordinationNode:
 
         rospy.Subscriber("stopped", Empty, self._receive_stopped)
         rospy.Subscriber("exit", Empty, self._receive_exit)
-
-        self.started = False
-        rospy.Subscriber('/experiment_start', Empty, self._start_cb)
-        try:
-            rospy.loginfo("Awaiting start command from experiment controller")
-            self._await(self._start_received, timeout=300.0)
-        except TimeoutError as e:
-            rospy.logerr("Timeout while waiting for start command")
-            raise e
 
         # Socket for sending V2V/V2I packages
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
