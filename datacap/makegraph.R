@@ -85,7 +85,8 @@ plot <- ggplot(data = frame, aes(x=scenario, y=ttc)) +
         ylim(0, 3) + ggtitle("All scenarios") + 
         stat_boxplot(geom ='errorbar', width=0.5) +
         geom_boxplot() +
-        labs(x = "Scenario", y = "Time to collision (s)")
+        labs(x = "Scenario", y = "Time to collision (s)") +
+  geom_hline(aes(yintercept = median(ttc)), linetype = "dashed", size = 1)
 
 print(plot)
 
@@ -93,3 +94,26 @@ ggsave(plot = plot,
        filename = "summary.pdf",
        path = "datacap",
        device = "pdf")
+
+print(paste("Median for min TTC is", median(frame$ttc)))
+
+######################################
+# Create latency graph
+
+file <- file.path("datacap", "latency.csv")
+data = read.csv(file)
+
+plot <- ggplot(data = data, aes(x = latency)) +
+        theme_minimal(base_size = 20) +
+        theme(plot.title = element_text(hjust = 0.5)) +
+        xlim(0, 0.75) + ggtitle("System latency") +
+        geom_histogram(binwidth = 0.025, origin = 0) +
+        labs(x = "Samples", y = "Latency (s)") + geom_density() +
+        geom_vline(aes(xintercept = median(latency)), linetype = "dashed", size = 1)
+
+ggsave(plot = plot,
+       filename = "latency.pdf",
+       path = "datacap",
+       device = "pdf")
+
+print(paste("Median for latency is", median(data$latency)))
