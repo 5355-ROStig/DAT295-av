@@ -25,7 +25,8 @@ for(scenario in scenarios) {
   print("---------------------------------")
   print(paste("Prcessing scenario ", basename(scenario)))
   
-  plot <- ggplot() + theme_minimal(base_size = 20) + xlim(-4, 1) + ylim(0, 6.5)
+  plot <- ggplot() + theme_minimal(base_size = 20) + xlim(-4, 1) + ylim(0, 6.5) +
+    theme(plot.title = element_text(hjust = 0.5)) + ggtitle(basename(scenario))
   
   raw = list()
   smooth = list()
@@ -38,8 +39,8 @@ for(scenario in scenarios) {
     data <- read.csv(output)
     data <- data[is.finite(rowSums(data)),] # Remove INF
     # Remove everything after 5s because cars were manually moved during some experiments
-    data <- subset(data, time<5)
-    
+    data <- subset(data, time<10)
+
     minrow = data[which.min(data$ttc),]
     ttc <- c(ttc, minrow[1,]$ttc)
     ttc_scenario <- c(ttc_scenario, basename(scenario))
@@ -66,8 +67,8 @@ for(scenario in scenarios) {
   plot <- addList(plot, raw)
   plot <- addList(plot, smooth)
   plot <- addList(plot, minlist)
-  plot <- plot + labs(x = "Time to minimum time to collision",
-                      y = "Time to collision")
+  plot <- plot + labs(x = "Time to minimum time to collision (s)",
+                      y = "Time to collision (s)")
 
   print(plot)
   ggsave(plot = plot,
@@ -80,9 +81,11 @@ for(scenario in scenarios) {
 frame <- data.frame(ttc = ttc, scenario = ttc_scenario)
 plot <- ggplot(data = frame, aes(x=scenario, y=ttc)) +
         theme_minimal(base_size = 20) +
+        theme(plot.title = element_text(hjust = 0.5)) +
+        ylim(0, 3) + ggtitle("All scenarios") + 
         stat_boxplot(geom ='errorbar', width=0.5) +
         geom_boxplot() +
-        labs(x = "Experiment", y = "Time to collision")
+        labs(x = "Scenario", y = "Time to collision (s)")
 
 print(plot)
 

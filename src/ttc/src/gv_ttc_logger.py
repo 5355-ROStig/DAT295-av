@@ -44,6 +44,8 @@ if __name__ == '__main__':
             
             for row in reader:
                 time = float(row['time'])
+                if time > 10000000000:
+                    time = time / 1000
                 x = float(row['x'])
                 y = float(row['y'])
                 tag = int(row['tag'])
