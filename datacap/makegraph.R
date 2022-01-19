@@ -108,7 +108,7 @@ plot <- ggplot(data = data, aes(x = latency)) +
         theme(plot.title = element_text(hjust = 0.5)) +
         xlim(0, 0.75) + ggtitle("System latency") +
         geom_histogram(binwidth = 0.025, origin = 0) +
-        labs(x = "Samples", y = "Latency (s)") + geom_density() +
+        labs(y = "Samples", x = "Latency (s)") + geom_density() +
         geom_vline(aes(xintercept = median(latency)), linetype = "dashed", size = 1)
 
 ggsave(plot = plot,
